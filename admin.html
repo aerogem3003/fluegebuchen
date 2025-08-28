@@ -24,8 +24,10 @@
   th{color:var(--muted);font-weight:600}
   .row{display:flex;gap:8px;flex-wrap:wrap}
   .pill{font-size:12px;border:1px solid var(--border);border-radius:999px;padding:2px 8px;margin-right:6px;background:#fafafa}
-  .clsRow{display:flex;gap:8px;align-items:center;margin-top:8px}
   .danger{background:#ef4444;color:#fff;border:none}
+  .clsGrid{display:grid;gap:8px}
+  @media(min-width:960px){.clsGrid{grid-template-columns:2fr 1fr auto}}
+  .clsHeader{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;font-size:12px;color:var(--muted);margin-top:8px}
 </style>
 </head>
 <body>
@@ -33,7 +35,7 @@
   <header><h1>Aerogem – Admin</h1></header>
 
   <div class="wrap">
-    <!-- Flug anlegen/bearbeiten -->
+    <!-- Flug anlegen/bearbeiten inkl. Klassen -->
     <div class="card">
       <h2 style="margin:0 0 10px 0;font-size:18px">Flug</h2>
       <div class="grid cols-6">
@@ -44,23 +46,19 @@
         <div><label for="fTime">Uhrzeit</label><input id="fTime" type="time"></div>
         <div><label for="fDuration">Dauer (Min, optional)</label><input id="fDuration" type="number" min="0"></div>
       </div>
-      <div class="row" style="margin-top:10px">
-        <button id="saveBtn">Speichern</button>
-        <button id="resetBtn" class="ghost">Felder leeren</button>
+
+      <h3 style="margin:16px 0 6px 0;font-size:16px">Klassen</h3>
+      <div class="clsHeader"><div>Name</div><div>Preis (€)</div><div></div></div>
+      <div id="classesContainer" class="clsGrid"></div>
+      <div class="row" style="margin-top:8px">
+        <button id="addClass" class="ghost">Weitere Klasse</button>
         <span id="editBadge" class="pill" style="display:none">Bearbeitung</span>
       </div>
-    </div>
 
-    <!-- Klassen-Verwaltung für ausgewählten Flug -->
-    <div class="card" style="margin-top:16px">
-      <h2 style="margin:0 0 10px 0;font-size:18px">Klassen des aktuellen Flugs</h2>
-      <div class="clsRow">
-        <input id="clsName" placeholder="z. B. Economy / Business / First" style="flex:2">
-        <input id="clsPrice" type="number" step="0.01" min="0" placeholder="Preis €" style="flex:1">
-        <button id="addClassBtn" style="flex:0 0 auto">Klasse hinzufügen</button>
+      <div class="row" style="margin-top:12px">
+        <button id="saveBtn">Speichern</button>
+        <button id="resetBtn" class="ghost">Felder leeren</button>
       </div>
-      <div id="classesList" style="margin-top:8px"></div>
-      <div class="pill" id="noFlightHint" style="display:inline-block;margin-top:8px">Kein Flug ausgewählt</div>
     </div>
 
     <!-- Übersicht -->
@@ -89,7 +87,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
-// UI
+// UI refs
 const fNumber = document.getElementById('fNumber');
 const fOrigin = document.getElementById('fOrigin');
 const fDestination = document.getElementById('fDestination');
@@ -101,21 +99,57 @@ const resetBtn = document.getElementById('resetBtn');
 const editBadge = document.getElementById('editBadge');
 const rows = document.getElementById('flightRows');
 
-const clsName = document.getElementById('clsName');
-const clsPrice = document.getElementById('clsPrice');
-const addClassBtn = document.getElementById('addClassBtn');
-const classesList = document.getElementById('classesList');
-const noFlightHint = document.getElementById('noFlightHint');
+const classesContainer = document.getElementById('classesContainer');
+const addClassBtn = document.getElementById('addClass');
 
 let editingId = null;
 let cache = {};
 
+function classRow(name="", price=""){
+  const wrap = document.createElement('div');
+  wrap.className = "row";
+  wrap.style.alignItems = "center";
+  wrap.innerHTML = `
+    <input class="clsName" placeholder="z. B. Economy / Business / First" value="${name}">
+    <input class="clsPrice" type="number" step="0.01" min="0" placeholder="0.00" value="${price}">
+    <button class="danger" type="button">Entfernen</button>
+  `;
+  wrap.querySelector('.danger').addEventListener('click', ()=>wrap.remove());
+  return wrap;
+}
+function ensureMinClassRows(){
+  if(classesContainer.children.length===0){
+    classesContainer.appendChild(classRow("Economy","49"));
+    classesContainer.appendChild(classRow("Business","129"));
+    classesContainer.appendChild(classRow("First","199"));
+  }
+}
+ensureMinClassRows();
+
+addClassBtn.addEventListener('click', ()=>classesContainer.appendChild(classRow()));
+
 function clearForm(){
   editingId=null; editBadge.style.display='none';
   [fNumber,fOrigin,fDestination,fDate,fTime,fDuration].forEach(i=>i.value='');
-  renderClassesUI(null);
+  classesContainer.innerHTML='';
+  ensureMinClassRows();
 }
 resetBtn.addEventListener('click', clearForm);
+
+// build classes object from rows
+function collectClasses(){
+  const rows = [...classesContainer.querySelectorAll('.row')];
+  const result = {};
+  for(const r of rows){
+    const n = r.querySelector('.clsName').value.trim();
+    const p = parseFloat(r.querySelector('.clsPrice').value);
+    if(!n) continue;
+    if(!isFinite(p) || p < 0) continue;
+    const key = n.toLowerCase().replace(/\s+/g,'_').slice(0,24);
+    result[key] = { name:n, price: Number(p) };
+  }
+  return result;
+}
 
 saveBtn.addEventListener('click', async ()=>{
   const flight = {
@@ -130,58 +164,23 @@ saveBtn.addEventListener('click', async ()=>{
     alert('Route, Datum und Zeit sind Pflicht.');
     return;
   }
-  try{
-    if(editingId){
-      await update(ref(db, `flights/${editingId}`), flight);
-    }else{
-      const newRef = push(ref(db,'flights'));
-      await set(newRef, flight);
-      editingId = newRef.key; // direkt weiter bearbeiten (z.B. Klassen)
-      editBadge.style.display='inline-block';
-    }
-  }catch(e){ console.error(e); alert('Speichern fehlgeschlagen.'); }
-});
-
-function renderClassesUI(f){
-  classesList.innerHTML='';
-  if(!f){ noFlightHint.style.display='inline-block'; return; }
-  noFlightHint.style.display='none';
-  const classes = f.classes || {};
-  const entries = Object.entries(classes);
-  if(entries.length===0){
-    classesList.innerHTML = `<div class="muted">Keine Klassen angelegt.</div>`;
+  const classes = collectClasses();
+  if(Object.keys(classes).length === 0){
+    alert('Mindestens eine Klasse mit Preis angeben.');
     return;
   }
-  for(const [key,c] of entries){
-    const row = document.createElement('div'); row.className='row';
-    row.innerHTML = `
-      <span class="pill"><strong>${c.name||key}</strong> · ${Number(c.price||0).toFixed(2)} €</span>
-      <button class="danger" data-k="${key}">Löschen</button>
-    `;
-    row.querySelector('button').addEventListener('click', async ()=>{
-      if(!confirm('Klasse löschen?')) return;
-      try{
-        const copy = {...(cache[editingId]||{})};
-        copy.classes = {...(copy.classes||{})};
-        delete copy.classes[key];
-        await update(ref(db,`flights/${editingId}`), {classes: (Object.keys(copy.classes).length? copy.classes : null)});
-      }catch(e){ console.error(e); alert('Löschen fehlgeschlagen.'); }
-    });
-    classesList.appendChild(row);
-  }
-}
-
-addClassBtn.addEventListener('click', async ()=>{
-  if(!editingId){ alert('Zuerst Flug speichern/auswählen.'); return; }
-  const name = clsName.value.trim(); const price = parseFloat(clsPrice.value||'0');
-  if(!name){ alert('Klassenname fehlt.'); return; }
-  const key = name.toLowerCase().replace(/\s+/g,'_').slice(0,24); // id
   try{
-    const snap = await get(child(ref(db),`flights/${editingId}/classes/${key}`));
-    if(snap.exists()){ alert('Klasse existiert bereits.'); return; }
-    await update(ref(db,`flights/${editingId}/classes/${key}`), {name, price});
-    clsName.value=''; clsPrice.value='';
-  }catch(e){ console.error(e); alert('Hinzufügen fehlgeschlagen.'); }
+    if(editingId){
+      // volle Überschreibung inkl. Klassen
+      await set(ref(db, `flights/${editingId}`), {...flight, classes});
+    }else{
+      const newRef = push(ref(db,'flights'));
+      await set(newRef, {...flight, classes});
+      editingId = newRef.key;
+      editBadge.style.display='inline-block';
+    }
+    alert('Gespeichert.');
+  }catch(e){ console.error(e); alert('Speichern fehlgeschlagen.'); }
 });
 
 // Tabelle
@@ -192,7 +191,7 @@ onValue(ref(db,'flights'), snap=>{
   rows.innerHTML='';
   for(const f of list){
     const tr = document.createElement('tr');
-    const cls = f.classes? Object.values(f.classes).map(c=>c.name).join(', ') : '—';
+    const cls = f.classes? Object.values(f.classes).map(c=>`${c.name} (${Number(c.price||0).toFixed(2)} €)`).join(', ') : '—';
     tr.innerHTML = `
       <td>${f.number||'—'}</td>
       <td>${f.origin||'?'} → ${f.destination||'?'}</td>
@@ -212,13 +211,23 @@ onValue(ref(db,'flights'), snap=>{
       editingId = f.id; editBadge.style.display='inline-block';
       fNumber.value = fresh.number||''; fOrigin.value=fresh.origin||''; fDestination.value=fresh.destination||'';
       fDate.value=fresh.date||''; fTime.value=fresh.time||''; fDuration.value=fresh.durationMin||'';
-      renderClassesUI({id:f.id,...fresh});
+      classesContainer.innerHTML='';
+      const cls = fresh.classes||{};
+      if(Object.keys(cls).length){
+        for(const k of Object.keys(cls)){
+          classesContainer.appendChild(classRow(cls[k].name||k, Number(cls[k].price||0)));
+        }
+      }else{
+        ensureMinClassRows();
+      }
       window.scrollTo({top:0,behavior:'smooth'});
     });
     tr.querySelector('[data-del]').addEventListener('click', async ()=>{
       if(!confirm('Flug löschen?')) return;
-      try{ await remove(ref(db,`flights/${f.id}`)); if(editingId===f.id) clearForm(); }
-      catch(e){ console.error(e); alert('Löschen fehlgeschlagen.'); }
+      try{
+        await remove(ref(db,`flights/${f.id}`));
+        if(editingId===f.id) clearForm();
+      }catch(e){ console.error(e); alert('Löschen fehlgeschlagen.'); }
     });
     rows.appendChild(tr);
   }
