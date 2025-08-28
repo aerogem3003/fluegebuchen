@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aerogem – Admin</title>
+  <style>
+    :root{--bg:#0b1220;--card:#111a2b;--fg:#e5e7eb;--muted:#9aa3b2;--accent:#60a5fa;--warn:#f59e0b;--err:#f87171;--border:#22314d}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#09101d,#0b1220);color:var(--fg)}
+    header{padding:18px 16px;text-align:center;border-bottom:1px solid var(--border)}
+    header h1{margin:0;font-size:22px}
+    .demo-note{background:#f87171;color:#fff;text-align:center;padding:10px;font-weight:bold}
+    .wrap{max-width:1000px;margin:18px auto;padding:0 14px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+    .grid{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:880px){.grid{grid-template-columns:repeat(6,1fr)}}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input,button{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0d1728;color:var(--fg);font-size:14px}
+    button{background:var(--accent);border:none;font-weight:600;cursor:pointer}
+    .btn-row{display:flex;gap:8px;flex-wrap:wrap}
+    table{width:100%;border-collapse:collapse;margin-top:14px}
+    th,td{border-bottom:1px solid var(--border);padding:10px 8px;font-size:14px;text-align:left;vertical-align:top}
+    th{color:var(--muted);font-weight:600}
+    .actions{display:flex;gap:8px}
+    .danger{background:var(--err);border:none}
+    .ghost{background:#0d1728;border:1px solid var(--border)}
+    .badge{display:inline-block;padding:2px 8px;border-radius:100px;border:1px solid var(--border);font-size:12px;color:var(--muted)}
+    .gate{position:fixed;inset:0;background:rgba(3,6,12,.9);display:flex;align-items:center;justify-content:center;z-index:9999}
+    .gate .box{background:var(--card);border:1px solid var(--border);padding:18px;border-radius:14px;max-width:360px;width:92%}
+    .gate h2{margin:0 0 10px 0;font-size:18px}
+    .err{color:var(--err);font-size:13px;margin-top:8px;min-height:18px}
+  </style>
+</head>
+<body>
+  <div class="demo-note">
+    Hinweis: Dies ist eine Demo-Website. Es werden keine echten Flüge verkauft.
+  </div>
+
+  <header><h1>Aerogem – Admin</h1></header>
+
+  <!-- Passwort-Gate -->
+  <div class="gate" id="gate">
+    <div class="box">
+      <h2>Passwort erforderlich</h2>
+      <label for="pw">Admin-Passwort</label>
+      <input id="pw" type="password" placeholder="••••" />
+      <div class="btn-row" style="margin-top:10px">
+        <button id="pwBtn">Öffnen</button>
+      </div>
+      <div class="err" id="pwErr"></div>
+      <p class="badge">Hinweis: Nur UI-Schutz. Firebase bleibt öffentlich erreichbar.</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- Formular: Flug anlegen / bearbeiten -->
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label for="fNumber">Flugnummer</label>
+          <input id="fNumber" placeholder="z. B. AG123" />
+        </div>
+        <div>
+          <label for="fOrigin">Abflugort</label>
+          <input id="fOrigin" placeholder="z. B. DUS" />
+        </div>
+        <div>
+          <label for="fDestination">Ziel</label>
+          <input id="fDestination" placeholder="z. B. BER" />
+        </div>
+        <div>
+          <label for="fDate">Datum</label>
+          <input id="fDate" type="date" />
+        </div>
+        <div>
+          <label for="fTime">Uhrzeit</label>
+          <input id="fTime" type="time" />
+        </div>
+        <div>
+          <label for="fPrice">Preis (€)</label>
+          <input id="fPrice" type="number" step="0.01" min="0" placeholder="0.00" />
+        </div>
+      </div>
+
+      <div class="btn-row" style="margin-top:12px">
+        <button id="saveBtn">Speichern</button>
+        <button id="resetBtn" class="ghost">Eingaben leeren</button>
+        <span id="editBadge" class="badge" style="display:none">Bearbeitungsmodus</span>
+      </div>
+    </div>
+
+    <!-- Tabelle: Flüge -->
+    <div class="card" style="margin-top:16px">
+      <table>
+        <thead>
+          <tr>
+            <th>Flug</th>
+            <th>Route</th>
+            <th>Datum</th>
+            <th>Zeit</th>
+            <th>Preis</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody id="flightRows">
+          <!-- gefüllt via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, update, remove, get, child } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+    // Firebase-Konfiguration aus deinem Projekt
+    const firebaseConfig = {
+      apiKey: "AIzaSyDpgCuHH2uemLA89qbeS5FkTDH40jfd7rY",
+      authDomain: "aerogem-c8afc.firebaseapp.com",
+      databaseURL: "https://aerogem-c8afc-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "aerogem-c8afc",
+      storageBucket: "aerogem-c8afc.appspot.com",
+      messagingSenderId: "909540667460",
+      appId: "1:909540667460:web:5ef56747afcfc92ef7cc11"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    // Einfaches Passwort-Gate (Frontend)
+    const PW = "2016";
+    const gate = document.getElementById('gate');
+    const pwInput = document.getElementById('pw');
+    const pwErr = document.getElementById('pwErr');
+    document.getElementById('pwBtn').addEventListener('click', () => {
+      if(pwInput.value === PW){
+        gate.style.display = 'none';
+      } else {
+        pwErr.textContent = "Passwort falsch.";
+      }
+    });
+    pwInput.addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('pwBtn').click(); });
+
+    const fNumber = document.getElementById('fNumber');
+    const fOrigin = document.getElementById('fOrigin');
+    const fDestination = document.getElementById('fDestination');
+    const fDate = document.getElementById('fDate');
+    const fTime = document.getElementById('fTime');
+    const fPrice = document.getElementById('fPrice');
+    const saveBtn = document.getElementById('saveBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const editBadge = document.getElementById('editBadge');
+    const rows = document.getElementById('flightRows');
+
+    let editingId = null;
+
+    function uc(s){ return (s||'').trim(); }
+
+    function fillForm(f){
+      fNumber.value = f.number || '';
+      fOrigin.value = f.origin || '';
+      fDestination.value = f.destination || '';
+      fDate.value = f.date || '';
+      fTime.value = f.time || '';
+      fPrice.value = (f.price!=null) ? Number(f.price).toFixed(2) : '';
+    }
+
+    function clearForm(){
+      editingId = null;
+      editBadge.style.display='none';
+      fNumber.value = fOrigin.value = fDestination.value = fDate.value = fTime.value = fPrice.value = '';
+    }
+
+    resetBtn.addEventListener('click', clearForm);
+
+    saveBtn.addEventListener('click', async () => {
+      const flight = {
+        number: uc(fNumber.value),
+        origin: uc(fOrigin.value),
+        destination: uc(fDestination.value),
+        date: uc(fDate.value),
+        time: uc(fTime.value),
+        price: parseFloat(fPrice.value || '0')
+      };
+      if(!flight.origin || !flight.destination || !flight.date || !flight.time){
+        alert('Bitte mindestens Route, Datum und Uhrzeit ausfüllen.');
+        return;
+      }
+
+      try{
+        if(editingId){
+          await update(ref(db, `flights/${editingId}`), flight);
+        }else{
+          const newRef = push(ref(db, 'flights'));
+          await set(newRef, flight);
+        }
+        clearForm();
+      }catch(e){
+        console.error(e);
+        alert('Fehler beim Speichern.');
+      }
+    });
+
+    onValue(ref(db, 'flights'), snap => {
+      const val = snap.val() || {};
+      const list = Object.entries(val).map(([id,f])=>({id,...f}));
+      list.sort((a,b)=>(`${a.date||''} ${a.time||''}`).localeCompare(`${b.date||''} ${b.time||''}`));
+      rows.innerHTML = '';
+      for(const f of list){
+        const tr = document.createElement('tr');
+        const tdA = document.createElement('td'); tdA.textContent = f.number || '—';
+        const tdB = document.createElement('td'); tdB.textContent = `${f.origin||'?'} → ${f.destination||'?'}`;
+        const tdC = document.createElement('td'); tdC.textContent = f.date || '—';
+        const tdD = document.createElement('td'); tdD.textContent = f.time || '—';
+        const tdE = document.createElement('td'); tdE.textContent = (f.price!=null)? `${Number(f.price).toFixed(2)} €` : '—';
+
+        const tdF = document.createElement('td');
+        const actions = document.createElement('div'); actions.className='actions';
+        const eBtn = document.createElement('button'); eBtn.className='ghost'; eBtn.textContent='Bearbeiten';
+        eBtn.addEventListener('click', async ()=>{
+          const snapOne = await get(child(ref(db), `flights/${f.id}`));
+          const fresh = snapOne.val() || {};
+          fillForm(fresh);
+          editingId = f.id;
+          editBadge.style.display='inline-block';
+          window.scrollTo({top:0,behavior:'smooth'});
+        });
+        const dBtn = document.createElement('button'); dBtn.className='danger'; dBtn.textContent='Löschen';
+        dBtn.addEventListener('click', async ()=>{
+          if(confirm('Diesen Flug wirklich löschen?')){
+            try{
+              await remove(ref(db, `flights/${f.id}`));
+            }catch(e){
+              console.error(e); alert('Fehler beim Löschen.');
+            }
+          }
+        });
+        actions.appendChild(eBtn); actions.appendChild(dBtn);
+        tdF.appendChild(actions);
+
+        tr.appendChild(tdA); tr.appendChild(tdB); tr.appendChild(tdC); tr.appendChild(tdD); tr.appendChild(tdE); tr.appendChild(tdF);
+        rows.appendChild(tr);
+      }
+    });
+  </script>
+</body>
+</html>
