@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aerogem – Flug buchen</title>
+  <style>
+    :root{--bg:#0b1220;--card:#111a2b;--fg:#e5e7eb;--muted:#9aa3b2;--accent:#60a5fa;--ok:#34d399;--err:#f87171;--border:#22314d}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#09101d,#0b1220);color:var(--fg)}
+    header{padding:18px 16px;text-align:center;border-bottom:1px solid var(--border)}
+    header h1{margin:0;font-size:22px;letter-spacing:.5px}
+    .demo-note{background:#f87171;color:#fff;text-align:center;padding:10px;font-weight:bold}
+    .wrap{max-width:820px;margin:20px auto;padding:0 14px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    input,select,button{width:100%;padding:12px 12px;border-radius:10px;border:1px solid var(--border);background:#0d1728;color:var(--fg);font-size:15px}
+    select{appearance:none}
+    button{background:var(--accent);border:none;font-weight:600;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .row{display:grid;grid-template-columns:1fr;gap:12px}
+    .help{font-size:12px;color:var(--muted);margin-top:8px}
+    .msg{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:14px;border:1px solid var(--border)}
+    .msg.ok{background:#0d241b;border-color:#1f6b4e;color:#b6f3d4}
+    .msg.err{background:#241314;border-color:#6b1f25;color:#f8c7cd}
+  </style>
+</head>
+<body>
+  <div class="demo-note">
+    Hinweis: Dies ist eine Demo-Website. Es werden keine echten Flüge verkauft.
+  </div>
+
+  <header>
+    <h1>Aerogem – Flug buchen</h1>
+  </header>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="row" style="margin-bottom:10px">
+        <div>
+          <label for="flightSelect">Flug auswählen</label>
+          <select id="flightSelect">
+            <option value="">Bitte wählen…</option>
+          </select>
+          <p class="help" id="flightHelp">Flüge werden live aus Firebase geladen.</p>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label for="vorname">Vorname</label>
+          <input id="vorname" autocomplete="given-name" required />
+        </div>
+        <div>
+          <label for="nachname">Nachname</label>
+          <input id="nachname" autocomplete="family-name" required />
+        </div>
+        <div>
+          <label for="geburtsdatum">Geburtsdatum</label>
+          <input id="geburtsdatum" type="date" required />
+        </div>
+        <div>
+          <label for="telefon">Telefonnummer</label>
+          <input id="telefon" type="tel" placeholder="+49…" required />
+        </div>
+        <div>
+          <label for="email">E-Mail-Adresse</label>
+          <input id="email" type="email" autocomplete="email" required />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="bookBtn">Flug buchen</button>
+        <div id="msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+    // Firebase-Konfiguration aus deinem Projekt
+    const firebaseConfig = {
+      apiKey: "AIzaSyDpgCuHH2uemLA89qbeS5FkTDH40jfd7rY",
+      authDomain: "aerogem-c8afc.firebaseapp.com",
+      databaseURL: "https://aerogem-c8afc-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "aerogem-c8afc",
+      storageBucket: "aerogem-c8afc.appspot.com",
+      messagingSenderId: "909540667460",
+      appId: "1:909540667460:web:5ef56747afcfc92ef7cc11"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    const flightSelect = document.getElementById('flightSelect');
+    const bookBtn = document.getElementById('bookBtn');
+    const msgBox = document.getElementById('msg');
+
+    // Flüge laden
+    onValue(ref(db, 'flights'), snap => {
+      flightSelect.innerHTML = '<option value="">Bitte wählen…</option>';
+      const val = snap.val() || {};
+      const items = Object.entries(val).map(([id, f]) => ({id, ...f}));
+      for (const f of items) {
+        const label = `${f.number || '—'}  ${f.origin || '?'} → ${f.destination || '?'}  |  ${f.date || '?'} ${f.time || ''}  |  ${Number(f.price||0).toFixed(2)} €`;
+        const opt = document.createElement('option');
+        opt.value = f.id;
+        opt.textContent = label;
+        flightSelect.appendChild(opt);
+      }
+      document.getElementById('flightHelp').textContent = items.length ? 'Bereit.' : 'Noch keine Flüge verfügbar.';
+    });
+
+    function ucFirst(s){ if(!s) return s; return s.charAt(0).toUpperCase()+s.slice(1); }
+
+    function showMsg(text, ok=false){
+      msgBox.className = 'msg ' + (ok ? 'ok' : 'err');
+      msgBox.textContent = text;
+    }
+
+    bookBtn.addEventListener('click', async () => {
+      msgBox.className = ''; msgBox.textContent = '';
+      const flightId = flightSelect.value;
+      const vorname = ucFirst(document.getElementById('vorname').value.trim());
+      const nachname = ucFirst(document.getElementById('nachname').value.trim());
+      const geburtsdatum = document.getElementById('geburtsdatum').value;
+      const telefon = document.getElementById('telefon').value.trim();
+      const email = document.getElementById('email').value.trim();
+
+      if(!flightId) return showMsg('Bitte einen Flug auswählen.');
+      if(!vorname || !nachname || !geburtsdatum || !telefon || !email) return showMsg('Bitte alle Felder ausfüllen.');
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showMsg('E-Mail ist ungültig.');
+
+      bookBtn.disabled = true;
+
+      try{
+        const bookingRef = push(ref(db, 'bookings'));
+        const data = {
+          flightId, vorname, nachname, geburtsdatum, telefon, email,
+          createdAt: Date.now()
+        };
+        await set(bookingRef, data);
+        await set(push(ref(db, `flights/${flightId}/bookings`)), {bookingId: bookingRef.key, createdAt: Date.now()});
+        showMsg(`Buchung gespeichert. Referenz: ${bookingRef.key?.slice(-8)}`, true);
+
+        document.getElementById('vorname').value='';
+        document.getElementById('nachname').value='';
+        document.getElementById('geburtsdatum').value='';
+        document.getElementById('telefon').value='';
+        document.getElementById('email').value='';
+        flightSelect.value='';
+      }catch(e){
+        console.error(e);
+        showMsg('Fehler beim Speichern.');
+      }finally{
+        bookBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
