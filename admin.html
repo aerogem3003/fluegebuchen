@@ -5,29 +5,30 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Aerogem – Admin (Demo)</title>
 <style>
-  :root{--bg:#f6f7f9;--card:#ffffff;--fg:#0a0a0a;--muted:#64748b;--accent:#007aff;--border:#e5e7eb;--err:#ef4444}
+  :root{--bg:#f6f7f9;--card:#fff;--fg:#0a0a0a;--muted:#64748b;--accent:#007aff;--border:#e5e7eb;--danger:#ef4444}
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Inter,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg)}
-  header{padding:18px 16px;text-align:center;background:linear-gradient(#fff,#fafafa);border-bottom:1px solid var(--border)}
+  header{padding:18px 16px;text-align:center;background:#fff;border-bottom:1px solid var(--border)}
   h1{margin:0;font-size:22px;font-weight:700}
   .note{background:#ffe8e8;color:#7a1d1d;text-align:center;padding:10px;font-weight:600;border-bottom:1px solid #ffd4d4}
   .wrap{max-width:1100px;margin:20px auto;padding:0 14px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
   .grid{display:grid;gap:12px}
   @media(min-width:960px){.grid.cols-6{grid-template-columns:repeat(6,1fr)}}
-  label{font-size:13px;color:var(--muted);display:block;margin:0 0 6px}
-  input,button{width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;font-size:15px}
+  label{font-size:13px;color:#444;display:block;margin:0 0 6px}
+  input,button{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:#fff;font-size:15px}
+  input:focus,button:focus{outline:2px solid rgba(0,122,255,.25);outline-offset:1px}
   button{background:var(--accent);color:#fff;border:none;font-weight:600;cursor:pointer}
   button.ghost{background:#f3f4f6;color:#111;border:1px solid var(--border)}
+  button.danger{background:var(--danger);color:#fff;border:none}
   table{width:100%;border-collapse:collapse}
   th,td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:left;font-size:14px;vertical-align:top}
-  th{color:var(--muted);font-weight:600}
+  th{color:#475569;font-weight:600}
   .row{display:flex;gap:8px;flex-wrap:wrap}
-  .pill{font-size:12px;border:1px solid var(--border);border-radius:999px;padding:2px 8px;margin-right:6px;background:#fafafa}
-  .danger{background:#ef4444;color:#fff;border:none}
-  .clsGrid{display:grid;gap:8px}
-  @media(min-width:960px){.clsGrid{grid-template-columns:2fr 1fr auto}}
-  .clsHeader{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;font-size:12px;color:var(--muted);margin-top:8px}
+  .pill{font-size:12px;border:1px solid var(--border);border-radius:999px;padding:2px 8px;background:#fafafa}
+  .clsHeader{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;font-size:12px;color:#475569;margin-top:6px}
+  .clsGrid{display:grid;grid-template-columns:2fr 1fr auto;gap:8px}
+  .muted{color:#64748b}
 </style>
 </head>
 <body>
@@ -49,15 +50,15 @@
 
       <h3 style="margin:16px 0 6px 0;font-size:16px">Klassen</h3>
       <div class="clsHeader"><div>Name</div><div>Preis (€)</div><div></div></div>
-      <div id="classesContainer" class="clsGrid"></div>
-      <div class="row" style="margin-top:8px">
-        <button id="addClass" class="ghost">Weitere Klasse</button>
+      <div id="classesContainer" class="clsGrid" style="margin-bottom:8px"></div>
+      <div class="row">
+        <button id="addClass" class="ghost" type="button">Weitere Klasse</button>
         <span id="editBadge" class="pill" style="display:none">Bearbeitung</span>
       </div>
 
       <div class="row" style="margin-top:12px">
-        <button id="saveBtn">Speichern</button>
-        <button id="resetBtn" class="ghost">Felder leeren</button>
+        <button id="saveBtn" type="button">Speichern</button>
+        <button id="resetBtn" class="ghost" type="button">Felder leeren</button>
       </div>
     </div>
 
@@ -65,9 +66,10 @@
     <div class="card" style="margin-top:16px">
       <h2 style="margin:0 0 10px 0;font-size:18px">Flüge</h2>
       <table>
-        <thead><tr><th>Flug</th><th>Route</th><th>Datum</th><th>Zeit</th><th>Klassen</th><th>Aktionen</th></tr></thead>
+        <thead><tr><th>Flug</th><th>Route</th><th>Datum</th><th>Uhrzeit</th><th>Klassen</th><th>Aktionen</th></tr></thead>
         <tbody id="flightRows"></tbody>
       </table>
+      <div class="muted" id="emptyHint" style="margin-top:8px;display:none">Noch keine Flüge vorhanden.</div>
     </div>
   </div>
 
@@ -94,144 +96,172 @@ const fDestination = document.getElementById('fDestination');
 const fDate = document.getElementById('fDate');
 const fTime = document.getElementById('fTime');
 const fDuration = document.getElementById('fDuration');
-const saveBtn = document.getElementById('saveBtn');
-const resetBtn = document.getElementById('resetBtn');
-const editBadge = document.getElementById('editBadge');
-const rows = document.getElementById('flightRows');
 
 const classesContainer = document.getElementById('classesContainer');
 const addClassBtn = document.getElementById('addClass');
 
-let editingId = null;
-let cache = {};
+const saveBtn = document.getElementById('saveBtn');
+const resetBtn = document.getElementById('resetBtn');
+const editBadge = document.getElementById('editBadge');
+
+const rows = document.getElementById('flightRows');
+const emptyHint = document.getElementById('emptyHint');
+
+let editingId = null;       // aktuelle Flug-ID im Bearbeitungsmodus
+let cache = {};             // Snapshot der Flüge
+
+function toKey(name){
+  return name.toLowerCase().trim().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'').slice(0,24);
+}
 
 function classRow(name="", price=""){
   const wrap = document.createElement('div');
-  wrap.className = "row";
-  wrap.style.alignItems = "center";
-  wrap.innerHTML = `
-    <input class="clsName" placeholder="z. B. Economy / Business / First" value="${name}">
-    <input class="clsPrice" type="number" step="0.01" min="0" placeholder="0.00" value="${price}">
-    <button class="danger" type="button">Entfernen</button>
-  `;
-  wrap.querySelector('.danger').addEventListener('click', ()=>wrap.remove());
+  wrap.style.display = "contents"; // damit grid-Spalten wirken
+  const nameInput = document.createElement('input'); nameInput.className="clsName"; nameInput.placeholder="z. B. Economy"; nameInput.value=name;
+  const priceInput = document.createElement('input'); priceInput.className="clsPrice"; priceInput.type="number"; priceInput.step="0.01"; priceInput.min="0"; priceInput.placeholder="0.00"; priceInput.value=price;
+  const delBtn = document.createElement('button'); delBtn.className="danger"; delBtn.type="button"; delBtn.textContent="Entfernen";
+  delBtn.addEventListener('click', ()=>{ wrap.remove(); });
+  wrap.append(nameInput, priceInput, delBtn);
   return wrap;
 }
-function ensureMinClassRows(){
+
+function ensureDefaults(){
   if(classesContainer.children.length===0){
     classesContainer.appendChild(classRow("Economy","49"));
     classesContainer.appendChild(classRow("Business","129"));
     classesContainer.appendChild(classRow("First","199"));
   }
 }
-ensureMinClassRows();
+
+function clearForm(){
+  editingId = null;
+  editBadge.style.display = 'none';
+  [fNumber,fOrigin,fDestination,fDate,fTime,fDuration].forEach(i=>i.value="");
+  classesContainer.innerHTML="";
+  ensureDefaults();
+}
 
 addClassBtn.addEventListener('click', ()=>classesContainer.appendChild(classRow()));
 
-function clearForm(){
-  editingId=null; editBadge.style.display='none';
-  [fNumber,fOrigin,fDestination,fDate,fTime,fDuration].forEach(i=>i.value='');
-  classesContainer.innerHTML='';
-  ensureMinClassRows();
-}
-resetBtn.addEventListener('click', clearForm);
-
-// build classes object from rows
 function collectClasses(){
-  const rows = [...classesContainer.querySelectorAll('.row')];
-  const result = {};
-  for(const r of rows){
-    const n = r.querySelector('.clsName').value.trim();
-    const p = parseFloat(r.querySelector('.clsPrice').value);
-    if(!n) continue;
-    if(!isFinite(p) || p < 0) continue;
-    const key = n.toLowerCase().replace(/\s+/g,'_').slice(0,24);
-    result[key] = { name:n, price: Number(p) };
+  const rows = classesContainer.querySelectorAll('.clsName');
+  const res = {};
+  for(const nameInput of rows){
+    const row = nameInput.parentElement;
+    const priceInput = row.querySelector('.clsPrice');
+    const name = nameInput.value.trim();
+    const price = parseFloat(priceInput.value);
+    if(!name) continue;
+    if(!isFinite(price) || price < 0) continue;
+    const key = toKey(name);
+    res[key] = { name, price:Number(price) };
   }
-  return result;
+  return res;
 }
 
-saveBtn.addEventListener('click', async ()=>{
+async function saveFlight(){
   const flight = {
-    number: (fNumber.value||'').trim(),
-    origin: (fOrigin.value||'').trim().toUpperCase(),
-    destination: (fDestination.value||'').trim().toUpperCase(),
-    date: (fDate.value||'').trim(),
-    time: (fTime.value||'').trim(),
-    durationMin: fDuration.value? Number(fDuration.value): null
+    number: (fNumber.value||"").trim(),
+    origin: (fOrigin.value||"").trim().toUpperCase(),
+    destination: (fDestination.value||"").trim().toUpperCase(),
+    date: (fDate.value||"").trim(),
+    time: (fTime.value||"").trim(),
+    durationMin: fDuration.value ? Number(fDuration.value) : null
   };
   if(!flight.origin || !flight.destination || !flight.date || !flight.time){
-    alert('Route, Datum und Zeit sind Pflicht.');
+    alert("Route, Datum, Uhrzeit sind Pflicht.");
     return;
   }
   const classes = collectClasses();
-  if(Object.keys(classes).length === 0){
-    alert('Mindestens eine Klasse mit Preis angeben.');
+  if(Object.keys(classes).length===0){
+    alert("Mindestens eine Klasse mit Preis angeben.");
     return;
   }
   try{
     if(editingId){
-      // volle Überschreibung inkl. Klassen
-      await set(ref(db, `flights/${editingId}`), {...flight, classes});
+      // Vollständige Überschreibung, damit Daten konsistent bleiben
+      await set(ref(db, `flights/${editingId}`), { ...flight, classes });
     }else{
-      const newRef = push(ref(db,'flights'));
-      await set(newRef, {...flight, classes});
+      const newRef = push(ref(db, 'flights'));
+      await set(newRef, { ...flight, classes });
       editingId = newRef.key;
-      editBadge.style.display='inline-block';
+      editBadge.style.display = 'inline-block';
     }
-    alert('Gespeichert.');
-  }catch(e){ console.error(e); alert('Speichern fehlgeschlagen.'); }
-});
+    alert("Gespeichert.");
+  }catch(e){
+    console.error(e);
+    alert("Speichern fehlgeschlagen.");
+  }
+}
 
-// Tabelle
+saveBtn.addEventListener('click', saveFlight);
+resetBtn.addEventListener('click', clearForm);
+
+// Liste rendern
 onValue(ref(db,'flights'), snap=>{
-  cache = snap.val()||{};
-  const list = Object.entries(cache).map(([id,f])=>({id,...f}));
+  cache = snap.val() || {};
+  const list = Object.entries(cache).map(([id,f])=>({id, ...f}));
   list.sort((a,b)=>(`${a.date||''} ${a.time||''}`).localeCompare(`${b.date||''} ${b.time||''}`));
   rows.innerHTML='';
+  emptyHint.style.display = list.length? 'none' : 'block';
+
   for(const f of list){
     const tr = document.createElement('tr');
-    const cls = f.classes? Object.values(f.classes).map(c=>`${c.name} (${Number(c.price||0).toFixed(2)} €)`).join(', ') : '—';
+    const classesStr = f.classes ? Object.values(f.classes).map(c=>`${c.name} (${Number(c.price||0).toFixed(2)} €)`).join(', ') : '—';
     tr.innerHTML = `
       <td>${f.number||'—'}</td>
       <td>${f.origin||'?'} → ${f.destination||'?'}</td>
       <td>${f.date||'—'}</td>
       <td>${f.time||'—'}</td>
-      <td>${cls}</td>
+      <td>${classesStr}</td>
       <td>
         <div class="row">
-          <button class="ghost" data-id="${f.id}">Bearbeiten</button>
-          <button class="danger" data-del="${f.id}">Löschen</button>
+          <button class="ghost" data-edit="${f.id}" type="button">Bearbeiten</button>
+          <button class="danger" data-del="${f.id}" type="button">Löschen</button>
         </div>
       </td>
     `;
-    tr.querySelector('[data-id]').addEventListener('click', async ()=>{
-      const snapOne = await get(child(ref(db),`flights/${f.id}`));
-      const fresh = snapOne.val()||{};
-      editingId = f.id; editBadge.style.display='inline-block';
-      fNumber.value = fresh.number||''; fOrigin.value=fresh.origin||''; fDestination.value=fresh.destination||'';
-      fDate.value=fresh.date||''; fTime.value=fresh.time||''; fDuration.value=fresh.durationMin||'';
-      classesContainer.innerHTML='';
-      const cls = fresh.classes||{};
+    // Bearbeiten
+    tr.querySelector('[data-edit]').addEventListener('click', async ()=>{
+      const snapOne = await get(child(ref(db), `flights/${f.id}`));
+      const fresh = snapOne.val() || {};
+      editingId = f.id;
+      editBadge.style.display = 'inline-block';
+      fNumber.value = fresh.number || '';
+      fOrigin.value = fresh.origin || '';
+      fDestination.value = fresh.destination || '';
+      fDate.value = fresh.date || '';
+      fTime.value = fresh.time || '';
+      fDuration.value = fresh.durationMin || '';
+
+      classesContainer.innerHTML = '';
+      const cls = fresh.classes || {};
       if(Object.keys(cls).length){
         for(const k of Object.keys(cls)){
           classesContainer.appendChild(classRow(cls[k].name||k, Number(cls[k].price||0)));
         }
       }else{
-        ensureMinClassRows();
+        ensureDefaults();
       }
       window.scrollTo({top:0,behavior:'smooth'});
     });
+    // Löschen
     tr.querySelector('[data-del]').addEventListener('click', async ()=>{
-      if(!confirm('Flug löschen?')) return;
+      if(!confirm('Diesen Flug löschen?')) return;
       try{
-        await remove(ref(db,`flights/${f.id}`));
-        if(editingId===f.id) clearForm();
-      }catch(e){ console.error(e); alert('Löschen fehlgeschlagen.'); }
+        await remove(ref(db, `flights/${f.id}`));
+        if(editingId === f.id) clearForm();
+      }catch(e){
+        console.error(e);
+        alert('Löschen fehlgeschlagen.');
+      }
     });
     rows.appendChild(tr);
   }
 });
+
+// initial
+clearForm();
 </script>
 </body>
 </html>
