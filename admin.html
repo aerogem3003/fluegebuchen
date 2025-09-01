@@ -101,6 +101,8 @@
             e.preventDefault();
             const flight = {
                 flugnr: document.getElementById('flugnr').value,
+                abflug: document.getElementById('abflug').value,
+                ankunft: document.getElementById('ankunft').value,
                 datum: document.getElementById('datum').value,
                 zeit: document.getElementById('zeit').value,
                 klasse: document.getElementById('klasse').value,
@@ -119,7 +121,6 @@
 
         // Delete flight functionality
         const handleDeleteFlight = async (flightId) => {
-            // Using a simple check instead of confirm()
             showMessage("Flug wird gelöscht...");
             try {
                 await deleteDoc(doc(flightsRef, flightId));
@@ -169,7 +170,8 @@
             adminFlightList.innerHTML = flights.map(flight => `
                 <div class="bg-white p-4 rounded-xl shadow-sm flex items-center justify-between">
                     <div>
-                        <p class="font-medium text-blue-800">${flight.flugnr} | ${flight.datum} | ${flight.zeit}</p>
+                        <p class="font-medium text-blue-800">Flugnr: ${flight.flugnr} | ${flight.abflug} - ${flight.ankunft}</p>
+                        <p class="text-sm text-gray-600">Datum: ${flight.datum} | Zeit: ${flight.zeit}</p>
                         <p class="text-sm text-gray-600">${flight.klasse}, ${flight.dauerMin} Min, ${flight.preis} €</p>
                     </div>
                     <button class="delete-flight-btn px-4 py-1 text-xs bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors" data-id="${flight.id}">
@@ -227,6 +229,8 @@
                     <h3 class="text-xl font-semibold text-blue-800 mb-4">Neuen Flug hinzufügen</h3>
                     <form id="addFlightForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="text" id="flugnr" placeholder="Flugnummer" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="abflug" placeholder="Abflug (z.B. FRA)" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="ankunft" placeholder="Ankunft (z.B. JFK)" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <input type="date" id="datum" placeholder="Datum" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <input type="time" id="zeit" placeholder="Zeit" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <input type="text" id="klasse" placeholder="Klasse" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
