@@ -3,166 +3,192 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Aerogem – Flüge (Demo)</title>
+<title>Aerogem – Flüge</title>
 <style>
-  :root{--bg:#f6f7f9;--card:#fff;--fg:#0a0a0a;--muted:#64748b;--accent:#007aff;--border:#e5e7eb}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Inter,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg)}
-  header{padding:18px 16px;text-align:center;background:#fff;border-bottom:1px solid var(--border)}
-  h1{margin:0;font-size:22px;font-weight:700}
-  .note{background:#ffe8e8;color:#7a1d1d;text-align:center;padding:10px;font-weight:600}
-  .wrap{max-width:1000px;margin:20px auto;padding:0 14px}
-  .flights{display:grid;gap:12px}
-  .flight{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.05)}
-  .flight:hover{border-color:var(--accent)}
-  .muted{color:var(--muted)}
-  /* Overlay */
-  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:999}
-  .overlay .box{background:#fff;color:#000;max-width:500px;width:90%;border-radius:16px;padding:20px;max-height:90%;overflow:auto}
-  .overlay h2{margin-top:0}
-  label{font-size:13px;color:#444;display:block;margin-bottom:4px}
-  input,select,button{width:100%;padding:10px 12px;margin-bottom:10px;border-radius:10px;border:1px solid var(--border);font-size:15px}
-  button{background:var(--accent);color:#fff;border:none;font-weight:600;cursor:pointer}
-  button:disabled{opacity:.6;cursor:not-allowed}
-  .row{display:flex;gap:8px}
-  .msg{padding:10px;border-radius:8px;font-size:14px;margin-top:6px}
-  .ok{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0}
-  .err{background:#fef2f2;color:#7f1d1d;border:1px solid #fecaca}
-  .close{background:#f3f4f6;color:#111;border:1px solid var(--border)}
+    :root{--bg:#f6f7f9;--card:#fff;--fg:#0a0a0a;--muted:#64748b;--accent:#007aff;--border:#e5e7eb}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Inter,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg)}
+    header{padding:18px 16px;text-align:center;background:#fff;border-bottom:1px solid var(--border)}
+    h1{margin:0;font-size:22px;font-weight:700}
+    .note{background:#ffe8e8;color:#7a1d1d;text-align:center;padding:10px;font-weight:600}
+    .wrap{max-width:1000px;margin:20px auto;padding:0 14px}
+    .flights{display:grid;gap:12px}
+    .flight{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+    .flight:hover{border-color:var(--accent)}
+    .muted{color:var(--muted)}
+    /* Overlay */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:999}
+    .overlay.active{display:flex}
+    .overlay .box{background:#fff;color:#000;max-width:500px;width:90%;border-radius:16px;padding:20px;max-height:90%;overflow:auto}
+    .overlay h2{margin-top:0}
+    label{font-size:13px;color:#444;display:block;margin-bottom:4px}
+    input,select,button{width:100%;padding:10px 12px;margin-bottom:10px;border-radius:10px;border:1px solid var(--border);font-size:15px}
+    button{background:var(--accent);color:#fff;border:none;font-weight:600;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .row{display:flex;gap:8px}
+    .msg{padding:10px;border-radius:8px;font-size:14px;margin-top:6px}
+    .ok{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0}
+    .err{background:#fef2f2;color:#7f1d1d;border:1px solid #fecaca}
+    .close{background:#f3f4f6;color:#111;border:1px solid var(--border)}
 </style>
 </head>
 <body>
-  <div class="note">Demo-Website. Es werden keine echten Flüge verkauft.</div>
-  <header><h1>Aerogem – Flüge</h1></header>
+    <div class="note">Demo-Website. Es werden keine echten Flüge verkauft.</div>
+    <header><h1>Aerogem – Flüge</h1></header>
 
-  <div class="wrap">
-    <div id="flights" class="flights"></div>
-  </div>
-
-  <!-- Overlay -->
-  <div class="overlay" id="overlay">
-    <div class="box">
-      <h2 id="ovTitle"></h2>
-      <div id="ovMeta" class="muted"></div>
-
-      <label for="klasse">Klasse wählen</label>
-      <select id="klasse"></select>
-
-      <label for="vorname">Vorname</label>
-      <input id="vorname">
-
-      <label for="nachname">Nachname</label>
-      <input id="nachname">
-
-      <label for="geburtsdatum">Geburtsdatum</label>
-      <input id="geburtsdatum" type="date">
-
-      <label for="telefon">Telefon</label>
-      <input id="telefon" type="tel">
-
-      <label for="email">E-Mail</label>
-      <input id="email" type="email">
-
-      <div class="row">
-        <button id="bookBtn">Buchen</button>
-        <button id="closeBtn" class="close">Schließen</button>
-      </div>
-      <div id="msg"></div>
+    <div class="wrap">
+        <div id="flights" class="flights"></div>
+        <div class="muted" id="emptyHint" style="margin-top:8px;text-align:center;display:none">Derzeit sind keine Flüge verfügbar.</div>
     </div>
-  </div>
+
+    <div class="overlay" id="overlay">
+        <div class="box">
+            <h2 id="ovTitle"></h2>
+            <div id="ovMeta" class="muted"></div>
+            <label for="klasse">Klasse wählen</label>
+            <select id="klasse" required></select>
+            <label for="vorname">Vorname</label>
+            <input id="vorname" required>
+            <label for="nachname">Nachname</label>
+            <input id="nachname" required>
+            <label for="geburtsdatum">Geburtsdatum</label>
+            <input id="geburtsdatum" type="date" required>
+            <label for="telefon">Telefon</label>
+            <input id="telefon" type="tel" required>
+            <label for="email">E-Mail</label>
+            <input id="email" type="email" required>
+            <div class="row">
+                <button id="bookBtn">Buchen</button>
+                <button id="closeBtn" class="close">Schließen</button>
+            </div>
+            <div id="msg" style="display:none"></div>
+        </div>
+    </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDpgCuHH2uemLA89qbeS5FkTDH40jfd7rY",
-  authDomain: "aerogem-c8afc.firebaseapp.com",
-  databaseURL: "https://aerogem-c8afc-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "aerogem-c8afc",
-  storageBucket: "aerogem-c8afc.appspot.com",
-  messagingSenderId: "909540667460",
-  appId: "1:909540667460:web:5ef56747afcfc92ef7cc11"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    databaseURL: "YOUR_DATABASE_URL",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };
 const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
+const db = getDatabase(app);
 
+// UI references
 const flightsEl = document.getElementById('flights');
+const emptyHint = document.getElementById('emptyHint');
 const overlay = document.getElementById('overlay');
 const ovTitle = document.getElementById('ovTitle');
-const ovMeta  = document.getElementById('ovMeta');
+const ovMeta = document.getElementById('ovMeta');
 const klasseSel = document.getElementById('klasse');
+const vornameInput = document.getElementById('vorname');
+const nachnameInput = document.getElementById('nachname');
+const geburtsdatumInput = document.getElementById('geburtsdatum');
+const telefonInput = document.getElementById('telefon');
+const emailInput = document.getElementById('email');
 const bookBtn = document.getElementById('bookBtn');
-const msgBox = document.getElementById('msg');
 const closeBtn = document.getElementById('closeBtn');
+const msgBox = document.getElementById('msg');
 
 let currentFlightId = null;
+let currentFlightData = null;
 
-// Flüge laden
-onValue(ref(db,'flights'), snap=>{
-  const val = snap.val()||{};
-  flightsEl.innerHTML='';
-  const list = Object.entries(val).map(([id,f])=>({id,...f}));
-  list.sort((a,b)=>(`${a.date||''} ${a.time||''}`).localeCompare(`${b.date||''} ${b.time||''}`));
-  for(const f of list){
-    const card = document.createElement('div');
-    card.className='flight';
-    card.innerHTML = `
-      <div style="font-weight:600">${f.number||'—'} · ${f.origin||'?'} → ${f.destination||'?'}</div>
-      <div class="muted">${f.date||''} ${f.time||''}</div>
-    `;
-    card.addEventListener('click', ()=>openOverlay(f));
-    flightsEl.appendChild(card);
-  }
-});
-
-function openOverlay(f){
-  currentFlightId = f.id;
-  ovTitle.textContent = `${f.origin||'?'} → ${f.destination||'?'}`;
-  ovMeta.textContent  = `${f.number||'—'} · ${f.date||''} ${f.time||''}`;
-  klasseSel.innerHTML='';
-  const classes = f.classes||{};
-  for(const [k,c] of Object.entries(classes)){
-    const opt = document.createElement('option');
-    opt.value = k;
-    opt.textContent = `${c.name||k} – ${Number(c.price||0).toFixed(2)} €`;
-    klasseSel.appendChild(opt);
-  }
-  msgBox.textContent='';
-  overlay.style.display='flex';
+function showMsg(text, isSuccess) {
+    msgBox.textContent = text;
+    msgBox.className = 'msg ' + (isSuccess ? 'ok' : 'err');
+    msgBox.style.display = 'block';
+    setTimeout(() => { msgBox.style.display = 'none'; }, 5000);
 }
 
-closeBtn.addEventListener('click', ()=>{overlay.style.display='none';});
+function renderFlights(data) {
+    const list = Object.entries(data).map(([id, f]) => ({ id, ...f }));
+    list.sort((a, b) => (`${a.date || ''} ${a.time || ''}`).localeCompare(`${b.date || ''} ${b.time || ''}`));
+    flightsEl.innerHTML = '';
+    emptyHint.style.display = list.length ? 'none' : 'block';
 
-// Buchen
-bookBtn.addEventListener('click', async ()=>{
-  msgBox.textContent='';
-  const vorname=document.getElementById('vorname').value.trim();
-  const nachname=document.getElementById('nachname').value.trim();
-  const geburtsdatum=document.getElementById('geburtsdatum').value;
-  const telefon=document.getElementById('telefon').value.trim();
-  const email=document.getElementById('email').value.trim();
-  const klasse=klasseSel.value;
-
-  if(!currentFlightId) return;
-  if(!vorname||!nachname||!geburtsdatum||!telefon||!email){return showMsg('Bitte alle Felder ausfüllen.',false);}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){return showMsg('Ungültige E-Mail.',false);}
-
-  try{
-    const bookingRef = push(ref(db,'bookings'));
-    await set(bookingRef,{
-      flightId: currentFlightId,
-      klasse, vorname, nachname, geburtsdatum, telefon, email,
-      createdAt: Date.now()
-    });
-    showMsg('Buchung erfolgreich gespeichert.',true);
-  }catch(e){console.error(e);showMsg('Fehler beim Speichern.',false);}
-});
-
-function showMsg(text,ok){
-  msgBox.className='msg '+(ok?'ok':'err');
-  msgBox.textContent=text;
+    for (const f of list) {
+        const card = document.createElement('div');
+        card.className = 'flight';
+        card.innerHTML = `
+            <div style="font-weight:600">${f.number || '—'} · ${f.origin || '?'} → ${f.destination || '?'}</div>
+            <div class="muted">${f.date || ''} ${f.time || ''}</div>
+        `;
+        card.addEventListener('click', () => openOverlay(f));
+        flightsEl.appendChild(card);
+    }
 }
+
+function openOverlay(f) {
+    currentFlightId = f.id;
+    currentFlightData = f;
+    ovTitle.textContent = `${f.origin || '?'} → ${f.destination || '?'}`;
+    ovMeta.textContent = `${f.number || '—'} · ${f.date || ''} ${f.time || ''}`;
+    klasseSel.innerHTML = '';
+    const classes = f.classes || {};
+    for (const [key, c] of Object.entries(classes)) {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = `${c.name || key} – ${Number(c.price || 0).toFixed(2)} €`;
+        klasseSel.appendChild(opt);
+    }
+    msgBox.style.display = 'none';
+    overlay.classList.add('active');
+}
+
+function closeOverlay() {
+    overlay.classList.remove('active');
+    // Clear form fields
+    [vornameInput, nachnameInput, geburtsdatumInput, telefonInput, emailInput].forEach(input => input.value = '');
+}
+
+async function bookFlight() {
+    if (!currentFlightId) return;
+
+    const booking = {
+        flightId: currentFlightId,
+        klasse: klasseSel.value,
+        vorname: vornameInput.value.trim(),
+        nachname: nachnameInput.value.trim(),
+        geburtsdatum: geburtsdatumInput.value,
+        telefon: telefonInput.value.trim(),
+        email: emailInput.value.trim(),
+        createdAt: Date.now()
+    };
+    
+    // Simple validation
+    if (!booking.vorname || !booking.nachname || !booking.geburtsdatum || !booking.telefon || !booking.email) {
+        return showMsg('Bitte alle Felder ausfüllen.', false);
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.email)) {
+        return showMsg('Ungültige E-Mail-Adresse.', false);
+    }
+
+    try {
+        const newBookingRef = push(ref(db, `bookings/${currentFlightId}`));
+        await set(newBookingRef, booking);
+        showMsg('Buchung erfolgreich gespeichert!', true);
+    } catch (e) {
+        console.error("Buchung fehlgeschlagen:", e);
+        showMsg('Fehler beim Speichern der Buchung.', false);
+    }
+}
+
+// Event Listeners
+closeBtn.addEventListener('click', closeOverlay);
+bookBtn.addEventListener('click', bookFlight);
+
+// Initial load
+onValue(ref(db, 'flights'), snap => {
+    const data = snap.val() || {};
+    renderFlights(data);
+});
 </script>
 </body>
 </html>
