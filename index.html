@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aerogem - Demo-Website</title>
+    <title>Aerogem Flugbuchung</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,239 +11,208 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            @apply bg-gray-100 text-gray-800;
+            @apply bg-gray-100 text-gray-800 flex flex-col items-center p-4 min-h-screen;
         }
-        .container-wrapper {
-            max-width: 1200px;
-            @apply mx-auto px-4 py-8;
+        .container {
+            @apply bg-white p-8 rounded-2xl shadow-xl max-w-4xl w-full my-8;
         }
-        .section-card {
-            @apply bg-white p-6 md:p-8 rounded-2xl shadow-lg;
+        .btn {
+            @apply px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition duration-300;
         }
     </style>
 </head>
 <body>
 
-    <!-- Firebase SDK Imports -->
+    <p class="text-xs text-gray-500 mt-2">Demo-Website. Es werden keine echten Flüge verkauft.</p>
+    <h1 class="text-4xl font-extrabold text-blue-900 mt-4">AEROGEM</h1>
+
+    <div class="container">
+        <h2 class="text-2xl font-semibold text-blue-800 mb-6">Verfügbare Flüge</h2>
+        
+        <div id="flights-list" class="space-y-4">
+            <!-- Flight items will be rendered here -->
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="booking-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
+            <h3 class="text-2xl font-bold mb-4">Flug buchen</h3>
+            <p class="mb-4 text-sm text-gray-600" id="booking-info"></p>
+            <form id="booking-form" class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                    <input type="text" id="name" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700">Telefonnummer</label>
+                    <input type="tel" id="phone" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="email" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="dob" class="block text-sm font-medium text-gray-700">Geburtsdatum</label>
+                    <input type="date" id="dob" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="close-modal" class="px-4 py-2 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-200">Abbrechen</button>
+                    <button type="submit" class="btn text-sm">Jetzt buchen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Message Box (for alerts) -->
+    <div id="messageBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 p-4 bg-gray-800 text-white text-center rounded-xl shadow-lg transition-all duration-300 hidden" style="max-width: 300px;">
+        <p id="messageText"></p>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-        // IMPORTANT: Use the global variables provided by the Canvas environment
+        // Provided Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjC4kzGs2G2gT9kiNSa5YzBRNy3IiqkTo",
+            authDomain: "luciennervt.firebaseapp.com",
+            databaseURL: "https://luciennervt-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "luciennervt",
+            storageBucket: "luciennervt.firebasestorage.app",
+            messagingSenderId: "483314146697",
+            appId: "1:483314146697:web:46b08edad2180cbce05558"
+        };
+        
+        // IMPORTANT: Use the global variables provided by the Canvas environment for paths and auth
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        setLogLevel('debug'); // Enable Firestore logging
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let userId = null;
-        let flightsRef = null;
-        let ordersRef = null;
+        const flightsRef = collection(db, `artifacts/${appId}/public/data/flights`);
+        let bookingsRef = null;
+        let authReady = false;
 
-        // Authenticate the user
-        const authenticate = async () => {
-            try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Authentication error:", error);
-            }
-        };
-
-        // Listen for authentication state changes to get the user ID
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                userId = user.uid;
-                const privatePath = `/artifacts/${appId}/users/${userId}`;
-                flightsRef = collection(db, `${privatePath}/flights`);
-                ordersRef = collection(db, `${privatePath}/orders`);
-                listenForFlights(); // Start listening for flight data
-            } else {
-                userId = null;
-                authenticate();
-            }
-        });
-
-        // --- DOM elements and general functions ---
-        const bookingModal = document.getElementById('bookingModal');
-        const closeModalButton = document.getElementById('closeModalButton');
-        const bookingForm = document.getElementById('bookingForm');
-        const flightList = document.getElementById('flightList');
+        // Message box function
         const messageBox = document.getElementById('messageBox');
         const messageText = document.getElementById('messageText');
-
-        // Function to show a temporary message box
         function showMessage(text) {
             messageText.textContent = text;
             messageBox.classList.remove('hidden');
-            messageBox.classList.remove('translate-y-full');
-            messageBox.classList.add('translate-y-0');
-            setTimeout(() => {
-                messageBox.classList.remove('translate-y-0');
-                messageBox.classList.add('translate-y-full');
-                setTimeout(() => {
-                    messageBox.classList.add('hidden');
-                }, 500);
-            }, 3000);
+            setTimeout(() => messageBox.classList.add('hidden'), 5000);
         }
 
-        // --- Real-time data listeners ---
-        const listenForFlights = () => {
-            if (!flightsRef) return;
-            onSnapshot(flightsRef, (snapshot) => {
-                const flights = [];
-                snapshot.forEach(doc => {
-                    flights.push({ id: doc.id, ...doc.data() });
-                });
-                renderFlights(flights);
-            }, (error) => {
-                console.error("Fehler beim Abrufen der Flüge: ", error);
-            });
-        };
-
-        // --- Rendering Functions ---
-        const renderFlights = (flights) => {
-            if (flights.length === 0) {
-                flightList.innerHTML = `<div class="bg-gray-100 p-4 text-center text-gray-500 rounded-xl">Keine Flüge verfügbar.</div>`;
-                return;
+        // Authenticate user
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userId = user.uid;
+                bookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
+                authReady = true;
+                console.log("Benutzer authentifiziert. Buchungen werden in:", bookingsRef.path, "gespeichert.");
+            } else {
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (e) {
+                    console.error("Authentifizierungsfehler:", e);
+                    showMessage("Fehler bei der Authentifizierung.");
+                }
             }
+        });
 
-            flights.sort((a, b) => new Date(`${a.datum}T${a.zeit}`) - new Date(`${b.datum}T${b.zeit}`));
-
-            flightList.innerHTML = flights.map(flight => `
-                <div class="bg-white p-6 rounded-xl shadow-md flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-                    <div>
-                        <p class="text-xl font-semibold text-blue-800">Flugnr: ${flight.flugnr}</p>
-                        <p class="text-sm text-gray-600">Datum: ${flight.datum} | Zeit: ${flight.zeit}</p>
-                        <p class="text-sm text-gray-600">Dauer: ${flight.dauerMin} Min | Klasse: ${flight.klasse}</p>
+        // Listen for flights and display them
+        onSnapshot(flightsRef, (snapshot) => {
+            const flights = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const flightsList = document.getElementById('flights-list');
+            flightsList.innerHTML = ''; // Clear existing flights
+            if (flights.length === 0) {
+                flightsList.innerHTML = '<p class="text-center text-gray-500">Keine Flüge verfügbar.</p>';
+            }
+            flights.forEach(flight => {
+                const flightItem = document.createElement('div');
+                flightItem.className = 'bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0';
+                flightItem.innerHTML = `
+                    <div class="flex-grow">
+                        <p class="text-lg font-bold text-blue-900">Flugnr: ${flight.flugnr}</p>
+                        <p class="text-sm text-gray-600">
+                            ${flight.abflug} &rarr; ${flight.ankunft}
+                            <span class="mx-2">•</span>
+                            Datum: ${flight.datum}
+                            <span class="mx-2">•</span>
+                            Zeit: ${flight.zeit}
+                        </p>
+                        <p class="text-sm font-medium text-gray-600">Klasse: ${flight.klasse}</p>
+                        <p class="text-sm text-gray-600">Dauer: ${flight.dauerMin} Min</p>
                     </div>
-                    <div class="flex items-center space-x-4">
-                        <span class="text-2xl font-bold text-green-600">${flight.preis} €</span>
-                        <button class="book-flight-btn px-6 py-2 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition duration-300 shadow-md" data-id="${flight.id}">
-                            Buchen
-                        </button>
+                    <div class="flex-shrink-0 text-right">
+                        <p class="text-xl font-bold text-green-600">${flight.preis} €</p>
+                        <button data-id="${flight.id}" class="btn mt-2 book-btn">Buchen</button>
                     </div>
-                </div>
-            `).join('');
-
-            document.querySelectorAll('.book-flight-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const flightId = e.target.getAttribute('data-id');
-                    document.getElementById('bookingFlightId').value = flightId;
-                    bookingModal.classList.remove('hidden');
-                });
+                `;
+                flightsList.appendChild(flightItem);
             });
-        };
+        });
 
-        // --- Booking Modal and Form ---
-        closeModalButton.addEventListener('click', () => {
+        // Booking logic
+        const bookingModal = document.getElementById('booking-modal');
+        const bookingForm = document.getElementById('booking-form');
+        const bookingInfo = document.getElementById('booking-info');
+        let currentFlight = null;
+
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('book-btn')) {
+                const flightId = e.target.getAttribute('data-id');
+                // Find flight from the rendered list
+                const flightItem = document.querySelector(`[data-id="${flightId}"]`).closest('.bg-gray-50');
+                const flightData = {
+                    flugnr: flightItem.querySelector('p:nth-of-type(1)').textContent.split(':')[1].trim(),
+                    route: flightItem.querySelector('p:nth-of-type(2)').textContent,
+                    preis: parseInt(flightItem.querySelector('p:nth-of-type(4)').textContent.split(' ')[0])
+                };
+                currentFlight = flightData;
+                bookingInfo.textContent = `Sie buchen Flug ${flightData.flugnr} von ${flightData.route.split('→')[0].trim()} nach ${flightData.route.split('→')[1].split('•')[0].trim()} für ${flightData.preis} €.`;
+                bookingModal.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('close-modal').addEventListener('click', () => {
             bookingModal.classList.add('hidden');
         });
 
         bookingForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const bookingFlightId = document.getElementById('bookingFlightId').value;
-            let flightData = {};
+            if (!authReady) {
+                showMessage("Buchung nicht möglich. Bitte warten Sie, bis die Seite geladen ist.");
+                return;
+            }
+
+            const bookingData = {
+                flugnr: currentFlight.flugnr,
+                preis: currentFlight.preis,
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                dob: document.getElementById('dob').value,
+                timestamp: new Date().toISOString()
+            };
 
             try {
-                // Fetch flight details to include in the order
-                const flightDoc = await getDoc(doc(flightsRef, bookingFlightId));
-                if (flightDoc.exists()) {
-                    flightData = flightDoc.data();
-                } else {
-                    showMessage("Flug nicht gefunden.");
-                    return;
-                }
-
-                const booking = {
-                    flugnr: flightData.flugnr,
-                    firstName: document.getElementById('vorname').value,
-                    lastName: document.getElementById('nachname').value,
-                    phone: document.getElementById('telefon').value,
-                    email: document.getElementById('email').value,
-                    birthDate: document.getElementById('geburtsdatum').value,
-                    timestamp: new Date().toISOString(),
-                };
-
-                await addDoc(ordersRef, booking);
-                bookingForm.reset();
+                await addDoc(bookingsRef, bookingData);
+                showMessage("Buchung erfolgreich!");
                 bookingModal.classList.add('hidden');
-                showMessage("Ihre Buchung wurde erfolgreich erfasst!");
-
+                bookingForm.reset();
             } catch (error) {
-                console.error("Fehler bei der Buchung: ", error);
-                showMessage("Ein Fehler ist bei der Buchung aufgetreten.");
+                console.error("Fehler beim Speichern der Buchung:", error);
+                showMessage("Fehler bei der Buchung. Versuchen Sie es erneut.");
             }
         });
-
     </script>
-
-    <!-- Main Application Wrapper -->
-    <div class="container-wrapper">
-        <!-- Disclaimer -->
-        <p class="text-xs text-center text-red-500 font-medium mb-4">
-            Demo-Website. Es werden keine echten Flüge verkauft.
-        </p>
-
-        <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-blue-900">Aerogem</h1>
-            <p class="text-xl text-gray-600">Ihr Flugbuchungssystem</p>
-        </header>
-
-        <!-- Main Content Area -->
-        <main>
-            <!-- Customer Page -->
-            <div id="customerPage" class="section-card">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">Verfügbare Flüge</h2>
-                <div id="flightList" class="space-y-6">
-                    <!-- Flights will be dynamically added here -->
-                    <div class="bg-gray-100 p-4 text-center text-gray-500 rounded-xl">Keine Flüge verfügbar.</div>
-                </div>
-            </div>
-
-            <!-- Booking Modal (Hidden by default) -->
-            <div id="bookingModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center hidden">
-                <div class="bg-white rounded-2xl p-6 md:p-8 max-w-xl w-full mx-4 shadow-xl">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-2xl font-bold text-gray-800">Flug buchen</h3>
-                        <button id="closeModalButton" class="text-gray-500 hover:text-gray-800 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                    <form id="bookingForm" class="space-y-4">
-                        <input type="hidden" id="bookingFlightId">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <input type="text" id="vorname" placeholder="Vorname" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300">
-                            <input type="text" id="nachname" placeholder="Nachname" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300">
-                            <input type="tel" id="telefon" placeholder="Telefonnummer" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300">
-                            <input type="email" id="email" placeholder="E-Mail" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300">
-                            <input type="date" id="geburtsdatum" placeholder="Geburtsdatum" required class="col-span-full px-4 py-2 rounded-xl border border-gray-300">
-                        </div>
-                        <button type="submit" class="w-full px-6 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition duration-300 shadow-md">
-                            Jetzt buchen
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Message Box (for alerts) -->
-            <div id="messageBox" class="fixed inset-x-0 bottom-4 mx-auto p-4 bg-gray-800 text-white text-center rounded-xl shadow-lg transition-transform transform translate-y-full hidden" style="max-width: 300px;">
-                <p id="messageText"></p>
-            </div>
-
-        </main>
-    </div>
-
 </body>
 </html>
