@@ -1,98 +1,79 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Aerogem – Flüge suchen & buchen (Demo)</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aerogem – Flüge (Demo)</title>
 <style>
-  :root{
-    --bg:#f6f7f9;--card:#ffffff;--fg:#0a0a0a;--muted:#64748b;--accent:#007aff;
-    --border:#e5e7eb;--ok:#22c55e;--err:#ef4444
-  }
+  :root{--bg:#f6f7f9;--card:#fff;--fg:#0a0a0a;--muted:#64748b;--accent:#007aff;--border:#e5e7eb}
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Inter,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg)}
-  header{padding:18px 16px;text-align:center;background:linear-gradient(#fff,#fafafa);border-bottom:1px solid var(--border)}
-  h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.2px}
-  .note{background:#ffe8e8;color:#7a1d1d;text-align:center;padding:10px;font-weight:600;border-bottom:1px solid #ffd4d4}
-  .wrap{max-width:1060px;margin:20px auto;padding:0 14px}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-  .grid{display:grid;gap:12px}
-  @media(min-width:820px){.grid.cols-3{grid-template-columns:1.1fr 1.1fr .8fr}}
-  label{font-size:13px;color:var(--muted);display:block;margin:0 0 6px}
-  input,select,button{width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;font-size:15px}
-  input:focus,select:focus,button:focus{outline:2px solid rgba(0,122,255,.25);outline-offset:1px}
-  button{background:var(--accent);color:#fff;border:none;font-weight:600;cursor:pointer}
-  button.secondary{background:#f3f4f6;color:#111;border:1px solid var(--border)}
-  .results{margin-top:14px;display:grid;grid-template-columns:1fr;gap:12px}
-  @media(min-width:900px){.results{grid-template-columns:1fr 1fr}}
-  .trip{border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:flex-start}
-  .trip:hover{border-color:var(--accent)}
-  .pill{font-size:12px;border:1px solid var(--border);border-radius:999px;padding:2px 8px;color:#111;background:#fafafa}
+  header{padding:18px 16px;text-align:center;background:#fff;border-bottom:1px solid var(--border)}
+  h1{margin:0;font-size:22px;font-weight:700}
+  .note{background:#ffe8e8;color:#7a1d1d;text-align:center;padding:10px;font-weight:600}
+  .wrap{max-width:1000px;margin:20px auto;padding:0 14px}
+  .flights{display:grid;gap:12px}
+  .flight{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .flight:hover{border-color:var(--accent)}
   .muted{color:var(--muted)}
-  .col{flex:1}
-  .right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-  .sel{outline:2px solid var(--accent)}
-  .msg{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:14px;border:1px solid var(--border)}
-  .ok{background:#ecfdf3;border-color:#bbf7d0;color:#166534}
-  .err{background:#fef2f2;border-color:#fecaca;color:#7f1d1d}
-  .classRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
-  .radio{display:flex;align-items:center;gap:6px;border:1px solid var(--border);padding:6px 10px;border-radius:999px;background:#fafafa}
-  .sectionTitle{font-weight:700;margin:16px 0 8px 0}
+  /* Overlay */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:999}
+  .overlay .box{background:#fff;color:#000;max-width:500px;width:90%;border-radius:16px;padding:20px;max-height:90%;overflow:auto}
+  .overlay h2{margin-top:0}
+  label{font-size:13px;color:#444;display:block;margin-bottom:4px}
+  input,select,button{width:100%;padding:10px 12px;margin-bottom:10px;border-radius:10px;border:1px solid var(--border);font-size:15px}
+  button{background:var(--accent);color:#fff;border:none;font-weight:600;cursor:pointer}
+  button:disabled{opacity:.6;cursor:not-allowed}
+  .row{display:flex;gap:8px}
+  .msg{padding:10px;border-radius:8px;font-size:14px;margin-top:6px}
+  .ok{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0}
+  .err{background:#fef2f2;color:#7f1d1d;border:1px solid #fecaca}
+  .close{background:#f3f4f6;color:#111;border:1px solid var(--border)}
 </style>
 </head>
 <body>
   <div class="note">Demo-Website. Es werden keine echten Flüge verkauft.</div>
-  <header><h1>Aerogem</h1></header>
+  <header><h1>Aerogem – Flüge</h1></header>
 
   <div class="wrap">
-    <!-- Suche -->
-    <div class="card">
-      <div class="grid cols-3">
-        <div>
-          <label for="from">Abflug (Stadt oder Flughafen)</label>
-          <input id="from" placeholder="z. B. Düsseldorf oder DUS" />
-        </div>
-        <div>
-          <label for="to">Ankunft (Stadt oder Flughafen)</label>
-          <input id="to" placeholder="z. B. Berlin oder BER" />
-        </div>
-        <div>
-          <label>&nbsp;</label>
-          <div style="display:flex;gap:8px">
-            <button id="searchBtn" style="flex:1">Suchen</button>
-            <button id="useNearest" class="secondary" title="Nächsten Flughafen verwenden">Nächster Flughafen</button>
-          </div>
-        </div>
-      </div>
-      <div id="searchInfo" class="muted" style="margin-top:8px"></div>
-      <div class="results" id="results"></div>
-    </div>
+    <div id="flights" class="flights"></div>
+  </div>
 
-    <!-- Buchung -->
-    <div class="card" style="margin-top:16px">
-      <div class="sectionTitle">Reisenden-Daten</div>
-      <div class="grid cols-3" style="grid-template-columns:1fr 1fr 1fr">
-        <div><label for="vorname">Vorname</label><input id="vorname" autocomplete="given-name"></div>
-        <div><label for="nachname">Nachname</label><input id="nachname" autocomplete="family-name"></div>
-        <div><label for="geburtsdatum">Geburtsdatum</label><input id="geburtsdatum" type="date"></div>
-      </div>
-      <div class="grid cols-3" style="grid-template-columns:1fr 1fr">
-        <div><label for="telefon">Telefon</label><input id="telefon" type="tel" placeholder="+49…"></div>
-        <div><label for="email">E-Mail</label><input id="email" type="email" autocomplete="email"></div>
-      </div>
-      <div class="sectionTitle">Klasse wählen</div>
-      <div id="classPicker" class="classRow"></div>
+  <!-- Overlay -->
+  <div class="overlay" id="overlay">
+    <div class="box">
+      <h2 id="ovTitle"></h2>
+      <div id="ovMeta" class="muted"></div>
 
-      <div style="display:flex;gap:10px;margin-top:12px">
+      <label for="klasse">Klasse wählen</label>
+      <select id="klasse"></select>
+
+      <label for="vorname">Vorname</label>
+      <input id="vorname">
+
+      <label for="nachname">Nachname</label>
+      <input id="nachname">
+
+      <label for="geburtsdatum">Geburtsdatum</label>
+      <input id="geburtsdatum" type="date">
+
+      <label for="telefon">Telefon</label>
+      <input id="telefon" type="tel">
+
+      <label for="email">E-Mail</label>
+      <input id="email" type="email">
+
+      <div class="row">
         <button id="bookBtn">Buchen</button>
-        <div id="msg" class="msg" style="display:none"></div>
+        <button id="closeBtn" class="close">Schließen</button>
       </div>
+      <div id="msg"></div>
     </div>
   </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, onValue, push, set, get, child } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpgCuHH2uemLA89qbeS5FkTDH40jfd7rY",
@@ -106,251 +87,82 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
-// simple airport db (add mehr bei Bedarf)
-const AIRPORTS = [
-  {code:"DUS",city:"Düsseldorf",lat:51.2895,lon:6.7668},
-  {code:"CGN",city:"Köln",lat:50.8780,lon:7.1222},
-  {code:"FRA",city:"Frankfurt",lat:50.0379,lon:8.5622},
-  {code:"MUC",city:"München",lat:48.3538,lon:11.7861},
-  {code:"BER",city:"Berlin",lat:52.3667,lon:13.5033},
-  {code:"HAM",city:"Hamburg",lat:53.6336,lon:9.9990},
-  {code:"AMS",city:"Amsterdam",lat:52.3105,lon:4.7683},
-  {code:"CDG",city:"Paris",lat:49.0097,lon:2.5479}
-];
-function nearestAirport(lat,lon){
-  const R=6371; let best=null,bd=1e9;
-  for(const a of AIRPORTS){
-    const dLat=(a.lat-lat)*Math.PI/180, dLon=(a.lon-lon)*Math.PI/180;
-    const x=Math.sin(dLat/2)**2+Math.cos(lat*Math.PI/180)*Math.cos(a.lat*Math.PI/180)*Math.sin(dLon/2)**2;
-    const d=2*R*Math.asin(Math.sqrt(x));
-    if(d<bd){bd=d;best=a}
-  }
-  return best;
-}
-function normalizePlace(s){
-  if(!s) return "";
-  s = s.trim();
-  const up = s.toUpperCase();
-  const a1 = AIRPORTS.find(a=>a.code===up);
-  if(a1) return a1.code;
-  const a2 = AIRPORTS.find(a=>a.city.toLowerCase()===s.toLowerCase());
-  return a2 ? a2.code : up; // fallback: treat as code
-}
-function daysUntil(dateStr){
-  if(!dateStr) return null;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(dateStr); d.setHours(0,0,0,0);
-  return Math.round((d - today)/86400000);
-}
-function fmtDays(d){
-  if(d===null) return "";
-  if(d===0) return "Heute";
-  if(d>0) return `in ${d} Tag${d===1?"":"en"}`;
-  return `vor ${Math.abs(d)} Tag${d===-1?"":"en"}`;
-}
-
-const fromEl = document.getElementById('from');
-const toEl = document.getElementById('to');
-const useNearestBtn = document.getElementById('useNearest');
-const searchBtn = document.getElementById('searchBtn');
-const resultsEl = document.getElementById('results');
-const searchInfo = document.getElementById('searchInfo');
-const classPicker = document.getElementById('classPicker');
+const flightsEl = document.getElementById('flights');
+const overlay = document.getElementById('overlay');
+const ovTitle = document.getElementById('ovTitle');
+const ovMeta  = document.getElementById('ovMeta');
+const klasseSel = document.getElementById('klasse');
 const bookBtn = document.getElementById('bookBtn');
 const msgBox = document.getElementById('msg');
+const closeBtn = document.getElementById('closeBtn');
 
-let flightsMap = {}; // id -> flight
-let currentSelection = null; // {type:'direct'|'conn', legs:[id,id], classKey, price}
+let currentFlightId = null;
 
+// Flüge laden
 onValue(ref(db,'flights'), snap=>{
-  flightsMap = {};
-  const v = snap.val()||{};
-  for(const [id,f] of Object.entries(v)){ flightsMap[id] = {...f,id}; }
+  const val = snap.val()||{};
+  flightsEl.innerHTML='';
+  const list = Object.entries(val).map(([id,f])=>({id,...f}));
+  list.sort((a,b)=>(`${a.date||''} ${a.time||''}`).localeCompare(`${b.date||''} ${b.time||''}`));
+  for(const f of list){
+    const card = document.createElement('div');
+    card.className='flight';
+    card.innerHTML = `
+      <div style="font-weight:600">${f.number||'—'} · ${f.origin||'?'} → ${f.destination||'?'}</div>
+      <div class="muted">${f.date||''} ${f.time||''}</div>
+    `;
+    card.addEventListener('click', ()=>openOverlay(f));
+    flightsEl.appendChild(card);
+  }
 });
 
-useNearestBtn.addEventListener('click', ()=>{
-  if(!navigator.geolocation){ searchInfo.textContent = "Geolocation nicht verfügbar."; return; }
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const a = nearestAirport(pos.coords.latitude, pos.coords.longitude);
-    fromEl.value = `${a.city} (${a.code})`;
-  }, _=>{ searchInfo.textContent="Standortzugriff abgelehnt."; }, {enableHighAccuracy:false,timeout:8000});
-});
-
-searchBtn.addEventListener('click', ()=>renderResults());
-
-function renderResults(){
-  resultsEl.innerHTML=""; classPicker.innerHTML=""; currentSelection=null; msgBox.style.display='none';
-  const fromCode = normalizePlace(fromEl.value);
-  const toCode   = normalizePlace(toEl.value);
-  if(!toCode){ searchInfo.textContent = "Ziel eingeben."; return; }
-  searchInfo.textContent = `Suche ab ${fromCode||"?"} nach ${toCode}…`;
-
-  const flights = Object.values(flightsMap);
-  // direct
-  const direct = flights.filter(f=>f.origin===fromCode && f.destination===toCode);
-  // one-stop connections: f1.origin=from, f1.destination = f2.origin, f2.destination=to, same date, layover 1–5h
-  const conn = [];
-  const byOrigin = {};
-  for(const f of flights){ (byOrigin[f.origin] ||= []).push(f); }
-  for(const f1 of flights){
-    if(f1.origin!==fromCode) continue;
-    const cand = byOrigin[f1.destination]||[];
-    for(const f2 of cand){
-      if(f2.destination!==toCode) continue;
-      if(f1.date!==f2.date) continue;
-      const t1 = new Date(`${f1.date}T${f1.time||"00:00"}:00`);
-      const t2 = new Date(`${f2.date}T${f2.time||"00:00"}:00`);
-      const lay = (t2 - t1)/3600000;
-      if(lay>=1 && lay<=5){ conn.push([f1,f2]); }
-    }
-  }
-
-  const allCards = [];
-
-  for(const f of direct){
-    const d = daysUntil(f.date);
-    const totalMin = (f.durationMin||0); // optional
-    const card = tripCard({
-      title:`Direkt • ${f.origin} → ${f.destination}`,
-      line:`${f.number||"—"} • ${f.date} ${f.time||""}`,
-      days:fmtDays(d),
-      priceHint:minClassPrice(f),
-      onSelect:()=>selectDirect(f)
-    });
-    allCards.push(card);
-  }
-  for(const [a,b] of conn){
-    const d = daysUntil(a.date);
-    const card = tripCard({
-      title:`Umstieg • ${a.origin} → ${b.destination}`,
-      line:`${a.number||"—"} ${a.origin}→${a.destination} · ${b.number||"—"} ${b.origin}→${b.destination} • ${a.date}`,
-      days:fmtDays(d),
-      priceHint:minPairPrice(a,b),
-      onSelect:()=>selectConnection(a,b)
-    });
-    allCards.push(card);
-  }
-
-  if(allCards.length===0){
-    resultsEl.innerHTML = `<div class="muted">Keine passenden Verbindungen gefunden.</div>`;
-  } else {
-    allCards.forEach(c=>resultsEl.appendChild(c));
-  }
-}
-
-function tripCard({title,line,days,priceHint,onSelect}){
-  const el = document.createElement('div');
-  el.className='trip';
-  el.innerHTML = `
-    <div class="col">
-      <div style="font-weight:700">${title}</div>
-      <div class="muted" style="margin-top:4px">${line}</div>
-      <div style="margin-top:8px"><span class="pill">${days}</span></div>
-    </div>
-    <div class="right">
-      <div class="muted">ab ${priceHint}</div>
-      <button class="chooseBtn">Auswählen</button>
-    </div>`;
-  el.querySelector('.chooseBtn').addEventListener('click', ()=>{
-    document.querySelectorAll('.trip').forEach(t=>t.classList.remove('sel'));
-    el.classList.add('sel');
-    onSelect();
-  });
-  return el;
-}
-
-// Klassenpreise
-function minClassPrice(f){
+function openOverlay(f){
+  currentFlightId = f.id;
+  ovTitle.textContent = `${f.origin||'?'} → ${f.destination||'?'}`;
+  ovMeta.textContent  = `${f.number||'—'} · ${f.date||''} ${f.time||''}`;
+  klasseSel.innerHTML='';
   const classes = f.classes||{};
-  const prices = Object.values(classes).map(c=>Number(c.price||0)).filter(x=>isFinite(x));
-  const m = prices.length? Math.min(...prices):0;
-  return `${m.toFixed(2)} €`;
-}
-function minPairPrice(a,b){
-  const ca=a.classes||{}, cb=b.classes||{};
-  let best=Infinity;
-  for(const k in ca){
-    if(cb[k]){ const s=Number(ca[k].price||0)+Number(cb[k].price||0); if(s<best) best=s; }
+  for(const [k,c] of Object.entries(classes)){
+    const opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = `${c.name||k} – ${Number(c.price||0).toFixed(2)} €`;
+    klasseSel.appendChild(opt);
   }
-  if(best===Infinity) best=0;
-  return `${best.toFixed(2)} €`;
+  msgBox.textContent='';
+  overlay.style.display='flex';
 }
 
-function buildClassPickerSingle(f){
-  classPicker.innerHTML='';
-  const classes = f.classes||{};
-  for(const [key,c] of Object.entries(classes)){
-    const span = document.createElement('label'); span.className='radio';
-    span.innerHTML = `<input type="radio" name="classPick"> <strong>${c.name||key}</strong> · ${Number(c.price||0).toFixed(2)} €`;
-    const input = span.querySelector('input');
-    input.addEventListener('change', ()=>{
-      currentSelection.classKey = key;
-      currentSelection.price   = Number(c.price||0);
-    });
-    classPicker.appendChild(span);
-  }
-}
-function buildClassPickerPair(a,b){
-  classPicker.innerHTML='';
-  const ca=a.classes||{}, cb=b.classes||{};
-  for(const k of Object.keys(ca)){
-    if(!cb[k]) continue;
-    const name = ca[k].name || k;
-    const sum  = Number(ca[k].price||0)+Number(cb[k].price||0);
-    const span = document.createElement('label'); span.className='radio';
-    span.innerHTML = `<input type="radio" name="classPick"> <strong>${name}</strong> · ${sum.toFixed(2)} € (2 Segmente)`;
-    const input = span.querySelector('input');
-    input.addEventListener('change', ()=>{
-      currentSelection.classKey = k;
-      currentSelection.price    = sum;
-    });
-    classPicker.appendChild(span);
-  }
-}
+closeBtn.addEventListener('click', ()=>{overlay.style.display='none';});
 
-function selectDirect(f){
-  currentSelection = {type:'direct', legs:[f.id], classKey:null, price:0};
-  buildClassPickerSingle(f);
-}
-function selectConnection(a,b){
-  currentSelection = {type:'conn', legs:[a.id,b.id], classKey:null, price:0};
-  buildClassPickerPair(a,b);
-}
+// Buchen
+bookBtn.addEventListener('click', async ()=>{
+  msgBox.textContent='';
+  const vorname=document.getElementById('vorname').value.trim();
+  const nachname=document.getElementById('nachname').value.trim();
+  const geburtsdatum=document.getElementById('geburtsdatum').value;
+  const telefon=document.getElementById('telefon').value.trim();
+  const email=document.getElementById('email').value.trim();
+  const klasse=klasseSel.value;
 
-function showMsg(text, ok){
-  msgBox.style.display='block';
-  msgBox.className = 'msg ' + (ok?'ok':'err');
-  msgBox.textContent = text;
-}
-
-document.getElementById('bookBtn').addEventListener('click', async ()=>{
-  msgBox.style.display='none';
-  const vorname = document.getElementById('vorname').value.trim();
-  const nachname = document.getElementById('nachname').value.trim();
-  const geburtsdatum = document.getElementById('geburtsdatum').value;
-  const telefon = document.getElementById('telefon').value.trim();
-  const email = document.getElementById('email').value.trim();
-
-  if(!currentSelection) return showMsg('Bitte zuerst eine Verbindung auswählen.', false);
-  if(!currentSelection.classKey) return showMsg('Bitte eine Klasse wählen.', false);
-  if(!vorname || !nachname || !geburtsdatum || !telefon || !email) return showMsg('Bitte alle Felder ausfüllen.', false);
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showMsg('E-Mail ungültig.', false);
+  if(!currentFlightId) return;
+  if(!vorname||!nachname||!geburtsdatum||!telefon||!email){return showMsg('Bitte alle Felder ausfüllen.',false);}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){return showMsg('Ungültige E-Mail.',false);}
 
   try{
     const bookingRef = push(ref(db,'bookings'));
     await set(bookingRef,{
-      type: currentSelection.type,
-      legs: currentSelection.legs,
-      classKey: currentSelection.classKey,
-      price: currentSelection.price,
-      vorname, nachname, geburtsdatum, telefon, email,
+      flightId: currentFlightId,
+      klasse, vorname, nachname, geburtsdatum, telefon, email,
       createdAt: Date.now()
     });
-    showMsg(`Buchung gespeichert. Ref: ${bookingRef.key.slice(-8)}`, true);
-  }catch(e){
-    console.error(e); showMsg('Fehler beim Speichern.', false);
-  }
+    showMsg('Buchung erfolgreich gespeichert.',true);
+  }catch(e){console.error(e);showMsg('Fehler beim Speichern.',false);}
 });
+
+function showMsg(text,ok){
+  msgBox.className='msg '+(ok?'ok':'err');
+  msgBox.textContent=text;
+}
 </script>
 </body>
 </html>
