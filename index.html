@@ -1,194 +1,249 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Aerogem – Flüge</title>
-<style>
-    :root{--bg:#f6f7f9;--card:#fff;--fg:#0a0a0a;--muted:#64748b;--accent:#007aff;--border:#e5e7eb}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Inter,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg)}
-    header{padding:18px 16px;text-align:center;background:#fff;border-bottom:1px solid var(--border)}
-    h1{margin:0;font-size:22px;font-weight:700}
-    .note{background:#ffe8e8;color:#7a1d1d;text-align:center;padding:10px;font-weight:600}
-    .wrap{max-width:1000px;margin:20px auto;padding:0 14px}
-    .flights{display:grid;gap:12px}
-    .flight{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.05)}
-    .flight:hover{border-color:var(--accent)}
-    .muted{color:var(--muted)}
-    /* Overlay */
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:999}
-    .overlay.active{display:flex}
-    .overlay .box{background:#fff;color:#000;max-width:500px;width:90%;border-radius:16px;padding:20px;max-height:90%;overflow:auto}
-    .overlay h2{margin-top:0}
-    label{font-size:13px;color:#444;display:block;margin-bottom:4px}
-    input,select,button{width:100%;padding:10px 12px;margin-bottom:10px;border-radius:10px;border:1px solid var(--border);font-size:15px}
-    button{background:var(--accent);color:#fff;border:none;font-weight:600;cursor:pointer}
-    button:disabled{opacity:.6;cursor:not-allowed}
-    .row{display:flex;gap:8px}
-    .msg{padding:10px;border-radius:8px;font-size:14px;margin-top:6px}
-    .ok{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0}
-    .err{background:#fef2f2;color:#7f1d1d;border:1px solid #fecaca}
-    .close{background:#f3f4f6;color:#111;border:1px solid var(--border)}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aerogem - Demo-Website</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            @apply bg-gray-100 text-gray-800;
+        }
+        .container-wrapper {
+            max-width: 1200px;
+            @apply mx-auto px-4 py-8;
+        }
+        .section-card {
+            @apply bg-white p-6 md:p-8 rounded-2xl shadow-lg;
+        }
+    </style>
 </head>
 <body>
-    <div class="note">Demo-Website. Es werden keine echten Flüge verkauft.</div>
-    <header><h1>Aerogem – Flüge</h1></header>
 
-    <div class="wrap">
-        <div id="flights" class="flights"></div>
-        <div class="muted" id="emptyHint" style="margin-top:8px;text-align:center;display:none">Derzeit sind keine Flüge verfügbar.</div>
-    </div>
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-    <div class="overlay" id="overlay">
-        <div class="box">
-            <h2 id="ovTitle"></h2>
-            <div id="ovMeta" class="muted"></div>
-            <label for="klasse">Klasse wählen</label>
-            <select id="klasse" required></select>
-            <label for="vorname">Vorname</label>
-            <input id="vorname" required>
-            <label for="nachname">Nachname</label>
-            <input id="nachname" required>
-            <label for="geburtsdatum">Geburtsdatum</label>
-            <input id="geburtsdatum" type="date" required>
-            <label for="telefon">Telefon</label>
-            <input id="telefon" type="tel" required>
-            <label for="email">E-Mail</label>
-            <input id="email" type="email" required>
-            <div class="row">
-                <button id="bookBtn">Buchen</button>
-                <button id="closeBtn" class="close">Schließen</button>
+        // IMPORTANT: Use the global variables provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        setLogLevel('debug'); // Enable Firestore logging
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userId = null;
+        let flightsRef = null;
+        let ordersRef = null;
+
+        // Authenticate the user
+        const authenticate = async () => {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Authentication error:", error);
+            }
+        };
+
+        // Listen for authentication state changes to get the user ID
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+                const privatePath = `/artifacts/${appId}/users/${userId}`;
+                flightsRef = collection(db, `${privatePath}/flights`);
+                ordersRef = collection(db, `${privatePath}/orders`);
+                listenForFlights(); // Start listening for flight data
+            } else {
+                userId = null;
+                authenticate();
+            }
+        });
+
+        // --- DOM elements and general functions ---
+        const bookingModal = document.getElementById('bookingModal');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const bookingForm = document.getElementById('bookingForm');
+        const flightList = document.getElementById('flightList');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+
+        // Function to show a temporary message box
+        function showMessage(text) {
+            messageText.textContent = text;
+            messageBox.classList.remove('hidden');
+            messageBox.classList.remove('translate-y-full');
+            messageBox.classList.add('translate-y-0');
+            setTimeout(() => {
+                messageBox.classList.remove('translate-y-0');
+                messageBox.classList.add('translate-y-full');
+                setTimeout(() => {
+                    messageBox.classList.add('hidden');
+                }, 500);
+            }, 3000);
+        }
+
+        // --- Real-time data listeners ---
+        const listenForFlights = () => {
+            if (!flightsRef) return;
+            onSnapshot(flightsRef, (snapshot) => {
+                const flights = [];
+                snapshot.forEach(doc => {
+                    flights.push({ id: doc.id, ...doc.data() });
+                });
+                renderFlights(flights);
+            }, (error) => {
+                console.error("Fehler beim Abrufen der Flüge: ", error);
+            });
+        };
+
+        // --- Rendering Functions ---
+        const renderFlights = (flights) => {
+            if (flights.length === 0) {
+                flightList.innerHTML = `<div class="bg-gray-100 p-4 text-center text-gray-500 rounded-xl">Keine Flüge verfügbar.</div>`;
+                return;
+            }
+
+            flights.sort((a, b) => new Date(`${a.datum}T${a.zeit}`) - new Date(`${b.datum}T${b.zeit}`));
+
+            flightList.innerHTML = flights.map(flight => `
+                <div class="bg-white p-6 rounded-xl shadow-md flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                    <div>
+                        <p class="text-xl font-semibold text-blue-800">Flugnr: ${flight.flugnr}</p>
+                        <p class="text-sm text-gray-600">Datum: ${flight.datum} | Zeit: ${flight.zeit}</p>
+                        <p class="text-sm text-gray-600">Dauer: ${flight.dauerMin} Min | Klasse: ${flight.klasse}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-2xl font-bold text-green-600">${flight.preis} €</span>
+                        <button class="book-flight-btn px-6 py-2 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition duration-300 shadow-md" data-id="${flight.id}">
+                            Buchen
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.book-flight-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const flightId = e.target.getAttribute('data-id');
+                    document.getElementById('bookingFlightId').value = flightId;
+                    bookingModal.classList.remove('hidden');
+                });
+            });
+        };
+
+        // --- Booking Modal and Form ---
+        closeModalButton.addEventListener('click', () => {
+            bookingModal.classList.add('hidden');
+        });
+
+        bookingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bookingFlightId = document.getElementById('bookingFlightId').value;
+            let flightData = {};
+
+            try {
+                // Fetch flight details to include in the order
+                const flightDoc = await getDoc(doc(flightsRef, bookingFlightId));
+                if (flightDoc.exists()) {
+                    flightData = flightDoc.data();
+                } else {
+                    showMessage("Flug nicht gefunden.");
+                    return;
+                }
+
+                const booking = {
+                    flugnr: flightData.flugnr,
+                    firstName: document.getElementById('vorname').value,
+                    lastName: document.getElementById('nachname').value,
+                    phone: document.getElementById('telefon').value,
+                    email: document.getElementById('email').value,
+                    birthDate: document.getElementById('geburtsdatum').value,
+                    timestamp: new Date().toISOString(),
+                };
+
+                await addDoc(ordersRef, booking);
+                bookingForm.reset();
+                bookingModal.classList.add('hidden');
+                showMessage("Ihre Buchung wurde erfolgreich erfasst!");
+
+            } catch (error) {
+                console.error("Fehler bei der Buchung: ", error);
+                showMessage("Ein Fehler ist bei der Buchung aufgetreten.");
+            }
+        });
+
+    </script>
+
+    <!-- Main Application Wrapper -->
+    <div class="container-wrapper">
+        <!-- Disclaimer -->
+        <p class="text-xs text-center text-red-500 font-medium mb-4">
+            Demo-Website. Es werden keine echten Flüge verkauft.
+        </p>
+
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-900">Aerogem</h1>
+            <p class="text-xl text-gray-600">Ihr Flugbuchungssystem</p>
+        </header>
+
+        <!-- Main Content Area -->
+        <main>
+            <!-- Customer Page -->
+            <div id="customerPage" class="section-card">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Verfügbare Flüge</h2>
+                <div id="flightList" class="space-y-6">
+                    <!-- Flights will be dynamically added here -->
+                    <div class="bg-gray-100 p-4 text-center text-gray-500 rounded-xl">Keine Flüge verfügbar.</div>
+                </div>
             </div>
-            <div id="msg" style="display:none"></div>
-        </div>
+
+            <!-- Booking Modal (Hidden by default) -->
+            <div id="bookingModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center hidden">
+                <div class="bg-white rounded-2xl p-6 md:p-8 max-w-xl w-full mx-4 shadow-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-800">Flug buchen</h3>
+                        <button id="closeModalButton" class="text-gray-500 hover:text-gray-800 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <form id="bookingForm" class="space-y-4">
+                        <input type="hidden" id="bookingFlightId">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" id="vorname" placeholder="Vorname" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300">
+                            <input type="text" id="nachname" placeholder="Nachname" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300">
+                            <input type="tel" id="telefon" placeholder="Telefonnummer" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300">
+                            <input type="email" id="email" placeholder="E-Mail" required class="col-span-1 px-4 py-2 rounded-xl border border-gray-300">
+                            <input type="date" id="geburtsdatum" placeholder="Geburtsdatum" required class="col-span-full px-4 py-2 rounded-xl border border-gray-300">
+                        </div>
+                        <button type="submit" class="w-full px-6 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition duration-300 shadow-md">
+                            Jetzt buchen
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Message Box (for alerts) -->
+            <div id="messageBox" class="fixed inset-x-0 bottom-4 mx-auto p-4 bg-gray-800 text-white text-center rounded-xl shadow-lg transition-transform transform translate-y-full hidden" style="max-width: 300px;">
+                <p id="messageText"></p>
+            </div>
+
+        </main>
     </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
-
-const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    databaseURL: "YOUR_DATABASE_URL",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
-};
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// UI references
-const flightsEl = document.getElementById('flights');
-const emptyHint = document.getElementById('emptyHint');
-const overlay = document.getElementById('overlay');
-const ovTitle = document.getElementById('ovTitle');
-const ovMeta = document.getElementById('ovMeta');
-const klasseSel = document.getElementById('klasse');
-const vornameInput = document.getElementById('vorname');
-const nachnameInput = document.getElementById('nachname');
-const geburtsdatumInput = document.getElementById('geburtsdatum');
-const telefonInput = document.getElementById('telefon');
-const emailInput = document.getElementById('email');
-const bookBtn = document.getElementById('bookBtn');
-const closeBtn = document.getElementById('closeBtn');
-const msgBox = document.getElementById('msg');
-
-let currentFlightId = null;
-let currentFlightData = null;
-
-function showMsg(text, isSuccess) {
-    msgBox.textContent = text;
-    msgBox.className = 'msg ' + (isSuccess ? 'ok' : 'err');
-    msgBox.style.display = 'block';
-    setTimeout(() => { msgBox.style.display = 'none'; }, 5000);
-}
-
-function renderFlights(data) {
-    const list = Object.entries(data).map(([id, f]) => ({ id, ...f }));
-    list.sort((a, b) => (`${a.date || ''} ${a.time || ''}`).localeCompare(`${b.date || ''} ${b.time || ''}`));
-    flightsEl.innerHTML = '';
-    emptyHint.style.display = list.length ? 'none' : 'block';
-
-    for (const f of list) {
-        const card = document.createElement('div');
-        card.className = 'flight';
-        card.innerHTML = `
-            <div style="font-weight:600">${f.number || '—'} · ${f.origin || '?'} → ${f.destination || '?'}</div>
-            <div class="muted">${f.date || ''} ${f.time || ''}</div>
-        `;
-        card.addEventListener('click', () => openOverlay(f));
-        flightsEl.appendChild(card);
-    }
-}
-
-function openOverlay(f) {
-    currentFlightId = f.id;
-    currentFlightData = f;
-    ovTitle.textContent = `${f.origin || '?'} → ${f.destination || '?'}`;
-    ovMeta.textContent = `${f.number || '—'} · ${f.date || ''} ${f.time || ''}`;
-    klasseSel.innerHTML = '';
-    const classes = f.classes || {};
-    for (const [key, c] of Object.entries(classes)) {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = `${c.name || key} – ${Number(c.price || 0).toFixed(2)} €`;
-        klasseSel.appendChild(opt);
-    }
-    msgBox.style.display = 'none';
-    overlay.classList.add('active');
-}
-
-function closeOverlay() {
-    overlay.classList.remove('active');
-    // Clear form fields
-    [vornameInput, nachnameInput, geburtsdatumInput, telefonInput, emailInput].forEach(input => input.value = '');
-}
-
-async function bookFlight() {
-    if (!currentFlightId) return;
-
-    const booking = {
-        flightId: currentFlightId,
-        klasse: klasseSel.value,
-        vorname: vornameInput.value.trim(),
-        nachname: nachnameInput.value.trim(),
-        geburtsdatum: geburtsdatumInput.value,
-        telefon: telefonInput.value.trim(),
-        email: emailInput.value.trim(),
-        createdAt: Date.now()
-    };
-    
-    // Simple validation
-    if (!booking.vorname || !booking.nachname || !booking.geburtsdatum || !booking.telefon || !booking.email) {
-        return showMsg('Bitte alle Felder ausfüllen.', false);
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.email)) {
-        return showMsg('Ungültige E-Mail-Adresse.', false);
-    }
-
-    try {
-        const newBookingRef = push(ref(db, `bookings/${currentFlightId}`));
-        await set(newBookingRef, booking);
-        showMsg('Buchung erfolgreich gespeichert!', true);
-    } catch (e) {
-        console.error("Buchung fehlgeschlagen:", e);
-        showMsg('Fehler beim Speichern der Buchung.', false);
-    }
-}
-
-// Event Listeners
-closeBtn.addEventListener('click', closeOverlay);
-bookBtn.addEventListener('click', bookFlight);
-
-// Initial load
-onValue(ref(db, 'flights'), snap => {
-    const data = snap.val() || {};
-    renderFlights(data);
-});
-</script>
 </body>
 </html>
