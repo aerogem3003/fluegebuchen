@@ -256,7 +256,7 @@
                      return code;
                  }
              }
-             return name.toUpperCase(); // Fallback
+             return name; // Fallback to original input if no match
         }
 
         // Search form submission
@@ -281,15 +281,15 @@
                 return flightDate.getFullYear() === year && (flightDate.getMonth() + 1) === month;
             });
 
-            const directFlights = flightsForMonth.filter(f => f.abflug.toUpperCase() === abflug && f.ankunft.toUpperCase() === ankunft);
+            const directFlights = flightsForMonth.filter(f => f.abflug.toUpperCase() === abflug.toUpperCase() && f.ankunft.toUpperCase() === ankunft.toUpperCase());
             
             const layoverFlights = [];
             flightsForMonth.forEach(firstLeg => {
-                if (firstLeg.abflug.toUpperCase() === abflug) {
+                if (firstLeg.abflug.toUpperCase() === abflug.toUpperCase()) {
                     flightsForMonth.forEach(secondLeg => {
                          const firstLegDate = new Date(firstLeg.datum);
                          const secondLegDate = new Date(secondLeg.datum);
-                         if (secondLeg.abflug === firstLeg.ankunft && secondLeg.ankunft.toUpperCase() === ankunft && secondLegDate >= firstLegDate) {
+                         if (secondLeg.abflug === firstLeg.ankunft && secondLeg.ankunft.toUpperCase() === ankunft.toUpperCase() && secondLegDate >= firstLegDate) {
                              layoverFlights.push([firstLeg, secondLeg]);
                          }
                     });
