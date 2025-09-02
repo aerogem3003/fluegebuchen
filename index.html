@@ -41,7 +41,7 @@
             <p class="mb-4 text-sm text-gray-600" id="booking-info"></p>
             <form id="booking-form" class="space-y-4">
                 <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Name und Vorname</label>
                     <input type="text" id="name" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <div>
@@ -71,8 +71,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, push, child } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
         // Provided Firebase configuration
         const firebaseConfig = {
@@ -87,13 +87,14 @@
         
         // IMPORTANT: Use the global variables provided by the Canvas environment for paths and auth
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Sanitize the appId to remove invalid characters for Realtime Database paths
+        const sanitizedAppId = appId.replace(/\./g, '-');
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        const db = getDatabase(app);
 
-        const flightsRef = collection(db, `artifacts/${appId}/public/data/flights`);
+        const flightsRef = ref(db, `artifacts/${sanitizedAppId}/public/data/flights`);
         let bookingsRef = null;
         let authReady = false;
 
@@ -110,16 +111,12 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userId = user.uid;
-                bookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
+                bookingsRef = ref(db, `artifacts/${sanitizedAppId}/users/${userId}/bookings`);
                 authReady = true;
-                console.log("Benutzer authentifiziert. Buchungen werden in:", bookingsRef.path, "gespeichert.");
+                console.log("Benutzer authentifiziert. Buchungen werden in:", bookingsRef.toString(), "gespeichert.");
             } else {
                 try {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    await signInAnonymously(auth);
                 } catch (e) {
                     console.error("Authentifizierungsfehler:", e);
                     showMessage("Fehler bei der Authentifizierung.");
@@ -128,13 +125,16 @@
         });
 
         // Listen for flights and display them
-        onSnapshot(flightsRef, (snapshot) => {
-            const flights = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        onValue(flightsRef, (snapshot) => {
+            const flightsData = snapshot.val();
             const flightsList = document.getElementById('flights-list');
-            flightsList.innerHTML = ''; // Clear existing flights
-            if (flights.length === 0) {
+            flightsList.innerHTML = '';
+            if (!flightsData) {
                 flightsList.innerHTML = '<p class="text-center text-gray-500">Keine Flüge verfügbar.</p>';
+                return;
             }
+            const flights = Object.keys(flightsData).map(key => ({ id: key, ...flightsData[key] }));
+
             flights.forEach(flight => {
                 const flightItem = document.createElement('div');
                 flightItem.className = 'bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0';
@@ -174,7 +174,7 @@
                 const flightData = {
                     flugnr: flightItem.querySelector('p:nth-of-type(1)').textContent.split(':')[1].trim(),
                     route: flightItem.querySelector('p:nth-of-type(2)').textContent,
-                    preis: parseInt(flightItem.querySelector('p:nth-of-type(4)').textContent.split(' ')[0])
+                    preis: parseInt(flightItem.querySelector('.text-green-600').textContent.split(' ')[0])
                 };
                 currentFlight = flightData;
                 bookingInfo.textContent = `Sie buchen Flug ${flightData.flugnr} von ${flightData.route.split('→')[0].trim()} nach ${flightData.route.split('→')[1].split('•')[0].trim()} für ${flightData.preis} €.`;
@@ -204,7 +204,7 @@
             };
 
             try {
-                await addDoc(bookingsRef, bookingData);
+                await push(bookingsRef, bookingData);
                 showMessage("Buchung erfolgreich!");
                 bookingModal.classList.add('hidden');
                 bookingForm.reset();
