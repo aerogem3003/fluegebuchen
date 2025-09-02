@@ -56,11 +56,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="abflugort" class="block text-sm font-medium text-gray-700">Abflug</label>
-                        <input type="text" id="abflugort" placeholder="Flughafen (z.B. FRA) oder Stadt" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+                        <input type="text" id="abflugort" placeholder="Flughafencode (z.B. FRA)" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
                     </div>
                     <div>
                         <label for="ankunftsort" class="block text-sm font-medium text-gray-700">Ankunft</label>
-                        <input type="text" id="ankunftsort" placeholder="Flughafen (z.B. BER) oder Stadt" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+                        <input type="text" id="ankunftsort" placeholder="Flughafencode (z.B. BER)" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
                     </div>
                 </div>
                 <div>
@@ -81,9 +81,9 @@
 
         <!-- Featured Flights (automatically displayed) -->
         <div class="mt-12">
-            <h3 class="text-2xl font-semibold text-blue-800 mb-6">Beliebte Flüge</h3>
+            <h3 class="text-2xl font-semibold text-blue-800 mb-6">Bevorstehende Flüge</h3>
             <div id="featured-flights-list" class="space-y-4">
-                <p class="text-center text-gray-500">Lade beliebte Flüge...</p>
+                <p class="text-center text-gray-500">Lade bevorstehende Flüge...</p>
             </div>
         </div>
 
@@ -130,7 +130,7 @@
                 <div id="confirmation-details" class="space-y-4"></div>
                 <div class="mt-6 text-sm text-gray-600">
                     <p>
-                        Wenn Sie eine Änderung an Ihrer Buchung vornehmen möchten, kontaktieren Sie uns bitte per E-Mail unter <a href="mailto:support@aerogem.com" class="text-blue-600 hover:underline">support@aerogem.com</a>.
+                        Wenn Sie eine Änderung an Ihrer Buchung vornehmen möchten, kontaktieren Sie uns bitte per E-Mail unter <a href="mailto:airways_customer.service@outlook.com" class="text-blue-600 hover:underline">airways_customer.service@outlook.com</a>.
                     </p>
                 </div>
             </div>
@@ -196,7 +196,7 @@
             if (user) {
                 userId = user.uid;
                 flightsRef = ref(db, `artifacts/${sanitizedAppId}/public/data/flights`);
-                bookingsRef = ref(db, `artifacts/${sanitizedAppId}/users/${userId}/bookings`);
+                bookingsRef = ref(db, `artifacts/${sanitizedAppId}/public/data/bookings`);
                 authReady = true;
                 
                 listenForFlights();
@@ -220,18 +220,16 @@
             });
         }
         
-        // Render featured flights (upcoming flights in the current month)
+        // Render featured flights (upcoming flights sorted by date)
         function renderFeaturedFlights() {
              const featuredFlightsList = document.getElementById('featured-flights-list');
              featuredFlightsList.innerHTML = '';
              const now = new Date();
-             const currentMonth = now.getMonth();
-             const currentYear = now.getFullYear();
              
              const upcomingFlights = allFlights.filter(flight => {
-                 const flightDate = new Date(flight.datum);
-                 return flightDate.getMonth() === currentMonth && flightDate.getFullYear() === currentYear;
-             }).sort((a, b) => new Date(a.datum + 'T' + a.zeit) - new Date(b.datum + 'T' + b.zeit));
+                 const flightDateTime = new Date(`${flight.datum}T${flight.zeit}`);
+                 return flightDateTime > now;
+             }).sort((a, b) => new Date(`${a.datum}T${a.zeit}`) - new Date(`${b.datum}T${b.zeit}`));
 
              if (upcomingFlights.length > 0) {
                  upcomingFlights.forEach(flight => {
@@ -239,7 +237,7 @@
                      featuredFlightsList.appendChild(flightItem);
                  });
              } else {
-                 featuredFlightsList.innerHTML = '<p class="text-center text-gray-500">Keine aktuellen Flüge für diesen Monat gefunden.</p>';
+                 featuredFlightsList.innerHTML = '<p class="text-center text-gray-500">Keine aktuellen Flüge gefunden.</p>';
              }
         }
         
@@ -256,7 +254,7 @@
                      return code;
                  }
              }
-             return name; // Fallback to original input if no match
+             return name.toUpperCase();
         }
 
         // Search form submission
@@ -281,15 +279,15 @@
                 return flightDate.getFullYear() === year && (flightDate.getMonth() + 1) === month;
             });
 
-            const directFlights = flightsForMonth.filter(f => f.abflug.toUpperCase() === abflug.toUpperCase() && f.ankunft.toUpperCase() === ankunft.toUpperCase());
+            const directFlights = flightsForMonth.filter(f => f.abflug.toUpperCase() === abflug && f.ankunft.toUpperCase() === ankunft);
             
             const layoverFlights = [];
             flightsForMonth.forEach(firstLeg => {
-                if (firstLeg.abflug.toUpperCase() === abflug.toUpperCase()) {
+                if (firstLeg.abflug.toUpperCase() === abflug) {
                     flightsForMonth.forEach(secondLeg => {
                          const firstLegDate = new Date(firstLeg.datum);
                          const secondLegDate = new Date(secondLeg.datum);
-                         if (secondLeg.abflug === firstLeg.ankunft && secondLeg.ankunft.toUpperCase() === ankunft.toUpperCase() && secondLegDate >= firstLegDate) {
+                         if (secondLeg.abflug === firstLeg.ankunft && secondLeg.ankunft.toUpperCase() === ankunft && secondLegDate >= firstLegDate) {
                              layoverFlights.push([firstLeg, secondLeg]);
                          }
                     });
