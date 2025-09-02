@@ -56,16 +56,16 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="abflugort" class="block text-sm font-medium text-gray-700">Abflug</label>
-                        <input type="text" id="abflugort" placeholder="Flughafen (z.B. FRA)" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+                        <input type="text" id="abflugort" placeholder="Flughafen (z.B. FRA) oder Stadt" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
                     </div>
                     <div>
                         <label for="ankunftsort" class="block text-sm font-medium text-gray-700">Ankunft</label>
-                        <input type="text" id="ankunftsort" placeholder="Flughafen (z.B. BER)" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+                        <input type="text" id="ankunftsort" placeholder="Flughafen (z.B. BER) oder Stadt" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
                     </div>
                 </div>
                 <div>
-                    <label for="woche" class="block text-sm font-medium text-gray-700">Woche der Abreise</label>
-                    <input type="week" id="woche" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+                    <label for="monat" class="block text-sm font-medium text-gray-700">Monat der Abreise</label>
+                    <input type="month" id="monat" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
                 </div>
                 <button type="submit" class="btn-primary w-full">Flüge suchen</button>
             </form>
@@ -199,7 +199,6 @@
                 authReady = true;
                 
                 listenForFlights();
-                renderFeaturedFlights();
 
             } else {
                 try {
@@ -220,17 +219,17 @@
             });
         }
         
-        // Render featured flights
+        // Render featured flights (upcoming flights in the current month)
         function renderFeaturedFlights() {
              const featuredFlightsList = document.getElementById('featured-flights-list');
              featuredFlightsList.innerHTML = '';
              const now = new Date();
-             const tomorrow = new Date(now.getTime() + (24 * 60 * 60 * 1000));
-             const nextWeek = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+             const currentMonth = now.getMonth();
+             const currentYear = now.getFullYear();
              
              const upcomingFlights = allFlights.filter(flight => {
-                 const flightDate = new Date(flight.datum + 'T' + flight.zeit);
-                 return flightDate > now && flightDate < nextWeek;
+                 const flightDate = new Date(flight.datum);
+                 return flightDate.getMonth() === currentMonth && flightDate.getFullYear() === currentYear;
              }).sort((a, b) => new Date(a.datum + 'T' + a.zeit) - new Date(b.datum + 'T' + b.zeit));
 
              if (upcomingFlights.length > 0) {
@@ -239,19 +238,24 @@
                      featuredFlightsList.appendChild(flightItem);
                  });
              } else {
-                 featuredFlightsList.innerHTML = '<p class="text-center text-gray-500">Keine aktuellen Flüge gefunden.</p>';
+                 featuredFlightsList.innerHTML = '<p class="text-center text-gray-500">Keine aktuellen Flüge für diesen Monat gefunden.</p>';
              }
         }
         
-        // Helper to convert full name to code
+        // Helper to convert full name or city name to code
         function nameToCode(name) {
              const cleanedName = name.toLowerCase().replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ä/g, 'a');
+             // Check if it's already a code
+             if (airportCodes[name.toUpperCase()]) {
+                 return name.toUpperCase();
+             }
+             // Check for city name
              for (const code in airportCodes) {
                  if (airportCodes[code].toLowerCase() === cleanedName) {
                      return code;
                  }
              }
-             return name.toUpperCase();
+             return name.toUpperCase(); // Fallback
         }
 
         // Search form submission
@@ -260,24 +264,32 @@
             e.preventDefault();
             const abflugort = nameToCode(document.getElementById('abflugort').value);
             const ankunftsort = nameToCode(document.getElementById('ankunftsort').value);
-            const woche = document.getElementById('woche').value;
+            const monat = document.getElementById('monat').value;
             
-            let results = findFlights(abflugort, ankunftsort, woche);
+            let results = findFlights(abflugort, ankunftsort, monat);
             renderSearchResults(results);
         });
         
         // Find flights (direct and with layover)
-        function findFlights(abflug, ankunft, woche) {
+        function findFlights(abflug, ankunft, monat) {
             if (!abflug || !ankunft) return [];
 
-            const flightsForWeek = allFlights.filter(f => getWeekNumber(new Date(f.datum)) === getWeekNumber(new Date(woche)));
-            const directFlights = flightsForWeek.filter(f => f.abflug.toUpperCase() === abflug && f.ankunft.toUpperCase() === ankunft);
+            const [year, month] = monat.split('-').map(Number);
+            const flightsForMonth = allFlights.filter(f => {
+                const flightDate = new Date(f.datum);
+                return flightDate.getFullYear() === year && (flightDate.getMonth() + 1) === month;
+            });
+
+            const directFlights = flightsForMonth.filter(f => f.abflug.toUpperCase() === abflug && f.ankunft.toUpperCase() === ankunft);
             
             const layoverFlights = [];
-            flightsForWeek.forEach(firstLeg => {
+            flightsForMonth.forEach(firstLeg => {
                 if (firstLeg.abflug.toUpperCase() === abflug) {
-                    flightsForWeek.forEach(secondLeg => {
-                        if (secondLeg.abflug === firstLeg.ankunft && secondLeg.ankunft.toUpperCase() === ankunft) {
+                    flightsForMonth.forEach(secondLeg => {
+                        // Check if the layover is a day later and a valid connection
+                        const firstLegDate = new Date(firstLeg.datum);
+                        const secondLegDate = new Date(secondLeg.datum);
+                        if (secondLeg.abflug === firstLeg.ankunft && secondLeg.ankunft.toUpperCase() === ankunft && secondLegDate > firstLegDate) {
                             layoverFlights.push([firstLeg, secondLeg]);
                         }
                     });
@@ -287,15 +299,6 @@
             return { direct: directFlights, layover: layoverFlights };
         }
         
-        // Helper function to get week number
-        function getWeekNumber(d) {
-            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-            return weekNo;
-        }
-
         // Render search results
         function renderSearchResults(results) {
             const resultsList = document.getElementById('search-results-list');
