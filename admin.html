@@ -102,8 +102,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, push, remove, child } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
         // Provided Firebase configuration
         const firebaseConfig = {
@@ -118,11 +118,11 @@
         
         // IMPORTANT: Use the global variables provided by the Canvas environment for paths and auth
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const sanitizedAppId = appId.replace(/\./g, '-');
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        const db = getDatabase(app);
 
         let userId = null;
         let flightsRef = null;
@@ -145,14 +145,14 @@
                 document.getElementById('user-id').textContent = `Ihre Benutzer-ID: ${userId}`;
                 
                 // Public collection for flights
-                flightsRef = collection(db, `artifacts/${appId}/public/data/flights`);
+                flightsRef = ref(db, `artifacts/${sanitizedAppId}/public/data/flights`);
                 
                 // Private collection for bookings
-                bookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
+                bookingsRef = ref(db, `artifacts/${sanitizedAppId}/users/${userId}/bookings`);
                 
                 authReady = true;
-                console.log("Admin authentifiziert. Flüge werden in:", flightsRef.path, "gespeichert.");
-                console.log("Buchungen werden in:", bookingsRef.path, "gespeichert.");
+                console.log("Admin authentifiziert. Flüge werden in:", flightsRef.toString(), "gespeichert.");
+                console.log("Buchungen werden in:", bookingsRef.toString(), "gespeichert.");
                 
                 // Start listening for data once authenticated
                 listenForFlights();
@@ -160,11 +160,7 @@
                 
             } else {
                 try {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    await signInAnonymously(auth);
                 } catch (e) {
                     console.error("Authentifizierungsfehler:", e);
                     showMessage("Fehler bei der Authentifizierung.");
@@ -193,7 +189,7 @@
             };
 
             try {
-                await addDoc(flightsRef, flightData);
+                await push(flightsRef, flightData);
                 showMessage("Flug erfolgreich hinzugefügt!");
                 addFlightForm.reset();
             } catch (error) {
@@ -204,13 +200,16 @@
 
         // Listen for flights and render them
         function listenForFlights() {
-            onSnapshot(flightsRef, (snapshot) => {
-                const flights = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            onValue(flightsRef, (snapshot) => {
+                const flightsData = snapshot.val();
                 const flightsList = document.getElementById('flights-list');
                 flightsList.innerHTML = '';
-                if (flights.length === 0) {
+                if (!flightsData) {
                     flightsList.innerHTML = '<p class="text-center text-gray-500">Keine Flüge vorhanden.</p>';
+                    return;
                 }
+                const flights = Object.keys(flightsData).map(key => ({ id: key, ...flightsData[key] }));
+
                 flights.forEach(flight => {
                     const flightItem = document.createElement('div');
                     flightItem.className = 'bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0';
@@ -230,13 +229,16 @@
 
         // Listen for bookings and render them
         function listenForBookings() {
-            onSnapshot(bookingsRef, (snapshot) => {
-                const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            onValue(bookingsRef, (snapshot) => {
+                const bookingsData = snapshot.val();
                 const bookingsList = document.getElementById('bookings-list');
                 bookingsList.innerHTML = '';
-                if (bookings.length === 0) {
+                if (!bookingsData) {
                     bookingsList.innerHTML = '<p class="text-center text-gray-500">Keine Buchungen vorhanden.</p>';
+                    return;
                 }
+                const bookings = Object.keys(bookingsData).map(key => ({ id: key, ...bookingsData[key] }));
+
                 bookings.forEach(booking => {
                     const bookingItem = document.createElement('div');
                     bookingItem.className = 'bg-gray-50 p-6 rounded-xl border border-gray-200';
@@ -259,11 +261,13 @@
                 const flightId = e.target.getAttribute('data-id');
                 if (!flightId) return;
 
+                // Please note: window.confirm() might not be visible in all environments.
+                // You may need to create a custom modal for confirmation.
                 const confirmation = window.confirm("Möchten Sie diesen Flug wirklich löschen?");
                 if (confirmation) {
                     try {
-                        const docRef = doc(db, `artifacts/${appId}/public/data/flights/${flightId}`);
-                        await deleteDoc(docRef);
+                        const flightRefToDelete = child(flightsRef, flightId);
+                        await remove(flightRefToDelete);
                         showMessage("Flug erfolgreich gelöscht.");
                     } catch (error) {
                         console.error("Fehler beim Löschen des Fluges:", error);
