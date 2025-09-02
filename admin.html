@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aerogem Admin</title>
+    <title>Aerogem Admin-Ansicht</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,118 +11,135 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            @apply bg-gray-100 text-gray-800 flex flex-col items-center p-4 min-h-screen;
+            @apply bg-gray-100 text-gray-800;
         }
         .container {
-            @apply bg-white p-8 rounded-2xl shadow-xl max-w-4xl w-full my-8;
+            @apply max-w-5xl mx-auto p-4 md:p-8;
         }
-        .input-group {
-            @apply flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4;
+        .card {
+            @apply bg-white p-6 md:p-8 rounded-2xl shadow-xl border border-gray-200;
         }
-        .input-group > div {
-            @apply flex-grow;
+        .btn {
+            @apply px-4 py-2 font-medium rounded-xl transition duration-300;
         }
         .btn-primary {
-            @apply px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2;
+            @apply bg-blue-600 text-white hover:bg-blue-700;
         }
-        .btn-secondary {
-            @apply px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-xl hover:bg-gray-300 transition duration-300 flex items-center justify-center space-x-2;
+        .btn-red {
+            @apply bg-red-500 text-white hover:bg-red-600;
         }
-        .btn-danger {
-            @apply px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-xl hover:bg-red-600 transition duration-300 flex items-center justify-center space-x-2;
+        .btn-green {
+            @apply bg-green-500 text-white hover:bg-green-600;
+        }
+        .input-field {
+            @apply mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500;
+        }
+        .section-header {
+            @apply text-2xl font-bold text-blue-800 mb-4;
         }
     </style>
 </head>
 <body>
+    <div class="container space-y-8">
+        <h1 class="text-4xl font-extrabold text-center text-blue-900 mt-8 mb-4">Aerogem Admin-Dashboard</h1>
+        <p class="text-center text-gray-500 text-sm">Demo-Website. Es werden keine echten Flüge verwaltet.</p>
 
-    <p class="text-xs text-gray-500 mt-2">Demo-Website. Es werden keine echten Flüge verkauft.</p>
-    <h1 class="text-4xl font-extrabold text-blue-900 mt-4">AEROGEM Admin</h1>
-    <p id="user-id" class="text-sm text-gray-500 mt-2">Ihre Benutzer-ID: </p>
+        <!-- Status & User Info -->
+        <div class="card text-center text-gray-600 font-medium">
+            <p id="user-info">Authentifiziere...</p>
+        </div>
 
-    <div class="container">
-        <h2 class="text-2xl font-semibold text-blue-800 mb-6">Flug hinzufügen</h2>
-        <form id="add-flight-form" class="space-y-4">
-            <div class="input-group">
-                <div>
-                    <label for="flugnr" class="block text-sm font-medium text-gray-700">Flugnummer</label>
-                    <input type="text" id="flugnr" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+        <!-- Add Flight Section -->
+        <div id="add-flight-section" class="card hidden">
+            <h2 class="section-header">Flug hinzufügen</h2>
+            <form id="add-flight-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="flugnr" class="block text-sm font-medium text-gray-700">Flugnr.</label>
+                        <input type="text" id="flugnr" required class="input-field" placeholder="z.B. LH456">
+                    </div>
+                    <div>
+                        <label for="klasse" class="block text-sm font-medium text-gray-700">Klasse</label>
+                        <input type="text" id="klasse" required class="input-field" placeholder="z.B. Economy">
+                    </div>
                 </div>
-                <div>
-                    <label for="abflug" class="block text-sm font-medium text-gray-700">Abflug (z.B. FRA)</label>
-                    <input type="text" id="abflug" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="abflugort" class="block text-sm font-medium text-gray-700">Abflug (Code)</label>
+                        <input type="text" id="abflugort" required class="input-field" placeholder="z.B. DUS">
+                    </div>
+                    <div>
+                        <label for="ankunftort" class="block text-sm font-medium text-gray-700">Ankunft (Code)</label>
+                        <input type="text" id="ankunftort" required class="input-field" placeholder="z.B. LAX">
+                    </div>
                 </div>
-                <div>
-                    <label for="ankunft" class="block text-sm font-medium text-gray-700">Ankunft (z.B. BER)</label>
-                    <input type="text" id="ankunft" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="datum" class="block text-sm font-medium text-gray-700">Datum</label>
+                        <input type="date" id="datum" required class="input-field">
+                    </div>
+                    <div>
+                        <label for="zeit" class="block text-sm font-medium text-gray-700">Zeit</label>
+                        <input type="time" id="zeit" required class="input-field">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="dauerMin" class="block text-sm font-medium text-gray-700">Dauer (Min)</label>
+                        <input type="number" id="dauerMin" required class="input-field" placeholder="z.B. 120">
+                    </div>
+                    <div>
+                        <label for="preis" class="block text-sm font-medium text-gray-700">Preis (€)</label>
+                        <input type="number" step="0.01" id="preis" required class="input-field" placeholder="z.B. 99.99">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-full mt-4">Flug hinzufügen</button>
+            </form>
+        </div>
+
+        <!-- Flights & Bookings Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div id="flights-section" class="card hidden">
+                <h2 class="section-header">Aktuelle Flüge</h2>
+                <div id="flights-list" class="space-y-4">
+                    <p class="text-gray-500">Lade Flüge...</p>
                 </div>
             </div>
-            <div class="input-group">
-                <div>
-                    <label for="datum" class="block text-sm font-medium text-gray-700">Datum</label>
-                    <input type="date" id="datum" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="zeit" class="block text-sm font-medium text-gray-700">Zeit</label>
-                    <input type="time" id="zeit" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="klasse" class="block text-sm font-medium text-gray-700">Klasse</label>
-                    <input type="text" id="klasse" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+
+            <div id="bookings-section" class="card hidden">
+                <h2 class="section-header">Aktuelle Buchungen</h2>
+                <div id="bookings-list" class="space-y-4">
+                    <p class="text-gray-500">Lade Buchungen...</p>
                 </div>
             </div>
-            <div class="input-group">
-                <div>
-                    <label for="dauerMin" class="block text-sm font-medium text-gray-700">Dauer (Minuten)</label>
-                    <input type="number" id="dauerMin" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="preis" class="block text-sm font-medium text-gray-700">Preis (€)</label>
-                    <input type="number" step="0.01" id="preis" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
-                </div>
+        </div>
+
+        <!-- Archived Data Section -->
+        <div id="archive-section" class="card hidden">
+            <h2 class="section-header">Archivierte Daten</h2>
+            <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-4">
+                <input type="text" id="archive-search-input" placeholder="Nach Flug oder Kunde suchen..." class="input-field flex-grow">
+                <select id="archive-filter-select" class="input-field flex-shrink-0">
+                    <option value="all">Alle archivierten Daten</option>
+                    <option value="flights">Nur Flüge</option>
+                    <option value="bookings">Nur Buchungen</option>
+                </select>
             </div>
-            <button type="submit" class="btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                </svg>
-                Flug hinzufügen
-            </button>
-        </form>
-    </div>
+            <div id="archived-data-list" class="space-y-4">
+                <p class="text-gray-500">Lade Archiv...</p>
+            </div>
+        </div>
 
-    <div class="container mt-8">
-        <h2 class="text-2xl font-semibold text-blue-800 mb-6">Alle Flüge</h2>
-        <div id="flights-list" class="space-y-4">
-            <!-- Flight list will be populated here -->
+        <!-- Message Box -->
+        <div id="messageBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 p-4 bg-gray-800 text-white text-center rounded-xl shadow-lg transition-all duration-300 hidden" style="max-width: 300px;">
+            <p id="messageText"></p>
         </div>
-    </div>
-    
-    <div class="container mt-8">
-        <h2 class="text-2xl font-semibold text-blue-800 mb-6">Alle Buchungen</h2>
-        <div id="bookings-list" class="space-y-4">
-            <!-- Booking list will be populated here -->
-        </div>
-    </div>
-    
-    <div class="container mt-8">
-        <h2 class="text-2xl font-semibold text-blue-800 mb-6">Archiv</h2>
-        <div class="mb-4">
-            <label for="archive-search" class="block text-sm font-medium text-gray-700">Archiv durchsuchen (Name oder Flugnummer)</label>
-            <input type="text" id="archive-search" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
-        </div>
-        <div id="archived-results" class="space-y-4">
-             <p class="text-center text-gray-500">Keine archivierten Daten vorhanden.</p>
-        </div>
-    </div>
-
-    <!-- Message Box -->
-    <div id="messageBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 p-4 bg-gray-800 text-white text-center rounded-xl shadow-lg transition-all duration-300 hidden" style="max-width: 300px;">
-        <p id="messageText"></p>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-        import { getDatabase, ref, onValue, push, remove, child } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+        import { getDatabase, ref, onValue, push, child, update, remove } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
         // Provided Firebase configuration
         const firebaseConfig = {
@@ -146,15 +163,15 @@
         let userId = null;
         let flightsRef = null;
         let bookingsRef = null;
-        let archivedFlightsRef = null;
-        let archivedBookingsRef = null;
+        let archivedRef = null;
         let authReady = false;
-        let allBookings = {};
-        
-        let archivedFlightsData = {};
-        let archivedBookingsData = {};
 
-        // Message box function
+        let allFlights = [];
+        let allBookings = [];
+        let archivedFlights = [];
+        let archivedBookings = [];
+
+        // Message box functions
         const messageBox = document.getElementById('messageBox');
         const messageText = document.getElementById('messageText');
         function showMessage(text) {
@@ -163,31 +180,25 @@
             setTimeout(() => messageBox.classList.add('hidden'), 5000);
         }
 
-        // Authenticate user and get references
+        // Authenticate user
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userId = user.uid;
-                document.getElementById('user-id').textContent = `Ihre Benutzer-ID: ${userId}`;
-                
-                // Public collection for flights
                 flightsRef = ref(db, `artifacts/${sanitizedAppId}/public/data/flights`);
-                
-                // Private collection for bookings
-                bookingsRef = ref(db, `artifacts/${sanitizedAppId}/users/${userId}/bookings`);
-                
-                // Archive collections
-                archivedFlightsRef = ref(db, `artifacts/${sanitizedAppId}/public/data/archivedFlights`);
-                archivedBookingsRef = ref(db, `artifacts/${sanitizedAppId}/users/${userId}/archivedBookings`);
-                
+                bookingsRef = ref(db, `artifacts/${sanitizedAppId}/public/data/bookings`);
+                archivedRef = ref(db, `artifacts/${sanitizedAppId}/public/data/archive`);
                 authReady = true;
-                console.log("Admin authentifiziert. Flüge werden in:", flightsRef.toString(), "gespeichert.");
-                console.log("Buchungen werden in:", bookingsRef.toString(), "gespeichert.");
                 
-                // Start listening for data once authenticated
+                document.getElementById('add-flight-section').classList.remove('hidden');
+                document.getElementById('flights-section').classList.remove('hidden');
+                document.getElementById('bookings-section').classList.remove('hidden');
+                document.getElementById('archive-section').classList.remove('hidden');
+                document.getElementById('user-info').textContent = `Angemeldet als: Admin (ID: ${userId})`;
+
                 listenForFlights();
                 listenForBookings();
                 listenForArchivedData();
-                
+
             } else {
                 try {
                     await signInAnonymously(auth);
@@ -197,240 +208,229 @@
                 }
             }
         });
-
-        // Add flight form submission
-        const addFlightForm = document.getElementById('add-flight-form');
-        addFlightForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!authReady) {
-                showMessage("Bitte warten Sie, bis die Seite geladen ist.");
-                return;
-            }
-
-            const flightData = {
-                flugnr: document.getElementById('flugnr').value,
-                abflug: document.getElementById('abflug').value,
-                ankunft: document.getElementById('ankunft').value,
-                datum: document.getElementById('datum').value,
-                zeit: document.getElementById('zeit').value,
-                klasse: document.getElementById('klasse').value,
-                dauerMin: parseInt(document.getElementById('dauerMin').value),
-                preis: parseFloat(document.getElementById('preis').value)
-            };
-
-            try {
-                await push(flightsRef, flightData);
-                showMessage("Flug erfolgreich hinzugefügt!");
-                addFlightForm.reset();
-            } catch (error) {
-                console.error("Fehler beim Hinzufügen des Fluges:", error);
-                showMessage("Fehler beim Hinzufügen. Versuchen Sie es erneut.");
-            }
-        });
-
-        // Listen for flights and render them
+        
+        // Listeners for data changes
         function listenForFlights() {
             onValue(flightsRef, (snapshot) => {
                 const flightsData = snapshot.val();
-                const flightsList = document.getElementById('flights-list');
-                flightsList.innerHTML = '';
-                if (!flightsData) {
-                    flightsList.innerHTML = '<p class="text-center text-gray-500">Keine Flüge vorhanden.</p>';
-                    return;
-                }
-                const flights = Object.keys(flightsData).map(key => ({ id: key, ...flightsData[key] }));
+                allFlights = flightsData ? Object.keys(flightsData).map(key => ({ id: key, ...flightsData[key] })) : [];
+                renderFlights();
+            });
+        }
+        
+        function listenForBookings() {
+            onValue(bookingsRef, (snapshot) => {
+                const bookingsData = snapshot.val();
+                allBookings = bookingsData ? Object.keys(bookingsData).map(key => ({ id: key, ...bookingsData[key] })) : [];
+                renderBookings();
+            });
+        }
 
-                flights.forEach(flight => {
+        function listenForArchivedData() {
+            onValue(archivedRef, (snapshot) => {
+                const archivedData = snapshot.val() || {};
+                archivedFlights = Object.values(archivedData.flights || {});
+                archivedBookings = Object.values(archivedData.bookings || {});
+                renderArchivedData();
+            });
+        }
+        
+        // Render functions
+        function renderFlights() {
+            const flightsList = document.getElementById('flights-list');
+            flightsList.innerHTML = '';
+            if (allFlights.length === 0) {
+                flightsList.innerHTML = '<p class="text-gray-500">Keine Flüge vorhanden.</p>';
+            } else {
+                allFlights.forEach(flight => {
                     const flightItem = document.createElement('div');
-                    flightItem.className = 'bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0';
+                    flightItem.className = 'bg-white p-4 rounded-lg border border-gray-200 flex items-center justify-between shadow-sm';
                     flightItem.innerHTML = `
                         <div class="flex-grow">
-                            <p class="text-lg font-bold text-blue-900">Flugnr: ${flight.flugnr}</p>
-                            <p class="text-sm text-gray-600">${flight.abflug} &rarr; ${flight.ankunft} • Datum: ${flight.datum} • Zeit: ${flight.zeit}</p>
-                            <p class="text-sm font-medium text-gray-600">Klasse: ${flight.klasse} • Dauer: ${flight.dauerMin} Min</p>
-                            <p class="text-xl font-bold text-green-600 mt-2">${flight.preis} €</p>
+                            <p class="font-bold text-lg">${flight.abflug} &rarr; ${flight.ankunft} (${flight.flugnr})</p>
+                            <p class="text-sm text-gray-600">Datum: ${flight.datum} | Zeit: ${flight.zeit} | Preis: ${flight.preis} €</p>
                         </div>
-                        <div class="flex-shrink-0 flex flex-col space-y-2">
-                            <button data-id="${flight.id}" data-type="flight" class="btn-danger delete-btn">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <div class="flex space-x-2">
+                            <button data-id="${flight.id}" data-type="flight" class="archive-btn btn bg-gray-200 text-gray-800 hover:bg-gray-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H4a1 1 0 01-1-1zm3 4a1 1 0 011-1h4a1 1 0 110 2H7a1 1 0 01-1-1zm3 4a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1zm3 4a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button data-id="${flight.id}" data-type="flight" class="delete-btn btn bg-red-500 text-white hover:bg-red-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                   <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                                 </svg>
-                                Löschen
-                            </button>
-                            <button data-id="${flight.id}" data-type="flight" class="btn-secondary archive-btn">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                  <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 5-4z" />
-                                </svg>
-                                Archivieren
                             </button>
                         </div>
                     `;
                     flightsList.appendChild(flightItem);
                 });
-            });
+            }
         }
-
-        // Listen for bookings and render them
-        function listenForBookings() {
-            onValue(bookingsRef, (snapshot) => {
-                const bookingsData = snapshot.val();
-                allBookings = bookingsData || {}; // Store for archive functionality
-                const bookingsList = document.getElementById('bookings-list');
-                bookingsList.innerHTML = '';
-                if (!bookingsData) {
-                    bookingsList.innerHTML = '<p class="text-center text-gray-500">Keine Buchungen vorhanden.</p>';
-                    return;
-                }
-                const bookings = Object.keys(bookingsData).map(key => ({ id: key, ...bookingsData[key] }));
-
-                bookings.forEach(booking => {
+        
+        function renderBookings() {
+            const bookingsList = document.getElementById('bookings-list');
+            bookingsList.innerHTML = '';
+            if (allBookings.length === 0) {
+                bookingsList.innerHTML = '<p class="text-gray-500">Keine Buchungen vorhanden.</p>';
+            } else {
+                allBookings.forEach(booking => {
                     const bookingItem = document.createElement('div');
-                    bookingItem.className = 'bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0';
+                    bookingItem.className = 'bg-white p-4 rounded-lg border border-gray-200 flex items-center justify-between shadow-sm';
+                    const itineraryHtml = booking.itinerary.map(leg => `${leg.abflug} &rarr; ${leg.ankunft}`).join(' | ');
                     bookingItem.innerHTML = `
                         <div class="flex-grow">
-                            <p class="text-sm font-bold text-blue-900 mb-2">Flugnr: ${booking.itinerary.map(f => f.flugnr).join(', ')}</p>
-                            <p class="text-sm">Name: ${booking.name}</p>
-                            <p class="text-sm">Email: ${booking.email}</p>
-                            <p class="text-sm">Geburtsdatum: ${booking.dob}</p>
-                            <p class="text-lg mt-2 font-bold text-green-600">Preis: ${booking.totalPrice} €</p>
+                            <p class="font-bold text-lg">${booking.name}</p>
+                            <p class="text-sm text-gray-600">Reiseroute: ${itineraryHtml}</p>
+                            <p class="text-sm text-gray-600">Preis: ${booking.totalPrice} €</p>
                         </div>
-                        <div class="flex-shrink-0 flex flex-col space-y-2">
-                           <button data-id="${booking.id}" data-type="booking" class="btn-secondary archive-btn">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                  <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 5-4z" />
+                        <div class="flex space-x-2">
+                            <button data-id="${booking.id}" data-type="booking" class="archive-btn btn bg-gray-200 text-gray-800 hover:bg-gray-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H4a1 1 0 01-1-1zm3 4a1 1 0 011-1h4a1 1 0 110 2H7a1 1 0 01-1-1zm3 4a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1zm3 4a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1z" clip-rule="evenodd" />
                                 </svg>
-                                Archivieren
-                           </button>
+                            </button>
+                            <button data-id="${booking.id}" data-type="booking" class="delete-btn btn bg-red-500 text-white hover:bg-red-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
                         </div>
                     `;
                     bookingsList.appendChild(bookingItem);
                 });
-            });
-        }
-
-        // Listen for archived data and render them
-        function listenForArchivedData() {
-            onValue(archivedFlightsRef, (snapshot) => {
-                archivedFlightsData = snapshot.val() || {};
-                renderArchivedData();
-            });
-            onValue(archivedBookingsRef, (snapshot) => {
-                archivedBookingsData = snapshot.val() || {};
-                renderArchivedData();
-            });
+            }
         }
         
-        // Render archived data (flights and bookings)
         function renderArchivedData() {
-             const resultsDiv = document.getElementById('archived-results');
-             const searchTerm = document.getElementById('archive-search').value.toLowerCase();
-             resultsDiv.innerHTML = '';
-             let hasResults = false;
-
-             const combinedData = [];
-             if (archivedFlightsData) {
-                 Object.keys(archivedFlightsData).forEach(key => {
-                     combinedData.push({ type: 'flight', id: key, ...archivedFlightsData[key] });
-                 });
-             }
-             if (archivedBookingsData) {
-                 Object.keys(archivedBookingsData).forEach(key => {
-                     combinedData.push({ type: 'booking', id: key, ...archivedBookingsData[key] });
-                 });
-             }
-             
-             combinedData.forEach(item => {
-                let match = false;
-                if (item.type === 'flight') {
-                    if (item.flugnr && item.flugnr.toLowerCase().includes(searchTerm)) {
-                        match = true;
-                    }
-                } else if (item.type === 'booking') {
-                    const flightNr = item.itinerary && item.itinerary.length > 0 && item.itinerary[0].flugnr;
-                    if ((item.name && item.name.toLowerCase().includes(searchTerm)) || (flightNr && flightNr.toLowerCase().includes(searchTerm))) {
-                        match = true;
-                    }
+            const dataList = document.getElementById('archived-data-list');
+            const filter = document.getElementById('archive-filter-select').value;
+            const searchTerm = document.getElementById('archive-search-input').value.toLowerCase();
+            dataList.innerHTML = '';
+            
+            const renderItem = (item, type) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'bg-white p-4 rounded-lg border border-gray-200 shadow-sm';
+                if (type === 'flight') {
+                    itemDiv.innerHTML = `
+                        <p class="font-bold text-lg text-gray-700">Flug archiviert</p>
+                        <p class="text-sm text-gray-600">${item.abflug} &rarr; ${item.ankunft} (${item.flugnr})</p>
+                        <p class="text-xs text-gray-500">Datum: ${item.datum} | Preis: ${item.preis} €</p>
+                    `;
+                } else if (type === 'booking') {
+                    const itineraryHtml = item.itinerary.map(leg => `${leg.abflug} &rarr; ${leg.ankunft}`).join(' | ');
+                     itemDiv.innerHTML = `
+                        <p class="font-bold text-lg text-gray-700">Buchung archiviert</p>
+                        <p class="text-sm text-gray-600">Kunde: ${item.name}</p>
+                        <p class="text-sm text-gray-600">Reise: ${itineraryHtml}</p>
+                    `;
                 }
-                
-                if (match || searchTerm === '') {
-                    hasResults = true;
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'bg-gray-50 p-6 rounded-xl border border-gray-200';
-                    if (item.type === 'flight') {
-                        itemDiv.innerHTML = `
-                            <p class="text-base font-bold text-blue-900 mb-1">Archivierter Flug</p>
-                            <p class="text-sm">Flugnr: ${item.flugnr}</p>
-                            <p class="text-sm">Route: ${item.abflug} &rarr; ${item.ankunft}</p>
-                            <p class="text-sm">Datum: ${item.datum}</p>
-                        `;
-                    } else if (item.type === 'booking') {
-                        itemDiv.innerHTML = `
-                            <p class="text-base font-bold text-blue-900 mb-1">Archivierte Buchung</p>
-                            <p class="text-sm">Kunde: ${item.name}</p>
-                            <p class="text-sm">Email: ${item.email}</p>
-                            <p class="text-sm">Flugnr: ${item.itinerary && item.itinerary.length > 0 ? item.itinerary.map(f => f.flugnr).join(', ') : 'N/A'}</p>
-                        `;
-                    }
-                    resultsDiv.appendChild(itemDiv);
-                }
-             });
+                dataList.appendChild(itemDiv);
+            };
 
-             if (!hasResults) {
-                 resultsDiv.innerHTML = `<p class="text-center text-gray-500">Keine archivierten Ergebnisse für "${searchTerm}" gefunden.</p>`;
-             }
+            const filteredFlights = archivedFlights.filter(f => 
+                f.abflug.toLowerCase().includes(searchTerm) || 
+                f.ankunft.toLowerCase().includes(searchTerm) ||
+                f.flugnr.toLowerCase().includes(searchTerm)
+            );
+
+            const filteredBookings = archivedBookings.filter(b => 
+                b.name.toLowerCase().includes(searchTerm) ||
+                b.itinerary.some(leg => leg.abflug.toLowerCase().includes(searchTerm) || leg.ankunft.toLowerCase().includes(searchTerm))
+            );
+
+            if (filter === 'all' || filter === 'flights') {
+                filteredFlights.forEach(f => renderItem(f, 'flight'));
+            }
+            if (filter === 'all' || filter === 'bookings') {
+                filteredBookings.forEach(b => renderItem(b, 'booking'));
+            }
+
+            if (dataList.innerHTML === '') {
+                dataList.innerHTML = '<p class="text-center text-gray-500">Keine archivierten Daten gefunden.</p>';
+            }
         }
         
-        // Search functionality for archive
-        document.getElementById('archive-search').addEventListener('input', () => {
-             renderArchivedData();
-        });
+        // Form & Button Event Listeners
+        const addFlightForm = document.getElementById('add-flight-form');
+        addFlightForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newFlight = {
+                flugnr: document.getElementById('flugnr').value,
+                datum: document.getElementById('datum').value,
+                zeit: document.getElementById('zeit').value,
+                klasse: document.getElementById('klasse').value,
+                dauerMin: parseInt(document.getElementById('dauerMin').value),
+                preis: parseFloat(document.getElementById('preis').value),
+                abflug: document.getElementById('abflugort').value,
+                ankunft: document.getElementById('ankunftort').value
+            };
 
-        // Archive and Delete functionality
-        document.addEventListener('click', async (e) => {
-            const element = e.target;
-            const elementId = element.getAttribute('data-id');
-            const elementType = element.getAttribute('data-type');
-            
-            if (element.classList.contains('delete-btn')) {
-                const confirmation = window.confirm(`Möchten Sie diesen ${elementType} wirklich löschen?`);
-                if (confirmation) {
-                    try {
-                        const itemRefToDelete = child(flightsRef, elementId);
-                        await remove(itemRefToDelete);
-                        showMessage(`${elementType} erfolgreich gelöscht.`);
-                    } catch (error) {
-                        console.error(`Fehler beim Löschen des ${elementType}s:`, error);
-                        showMessage("Fehler beim Löschen. Versuchen Sie es erneut.");
-                    }
-                }
-            } else if (element.classList.contains('archive-btn')) {
-                 const confirmation = window.confirm(`Möchten Sie diesen ${elementType} wirklich archivieren?`);
-                 if (confirmation) {
-                     try {
-                         if (elementType === 'flight') {
-                             const flightSnapshot = await get(child(flightsRef, elementId));
-                             const flightData = flightSnapshot.val();
-                             if (flightData) {
-                                 await push(archivedFlightsRef, flightData);
-                                 await remove(child(flightsRef, elementId));
-                                 showMessage("Flug erfolgreich archiviert.");
-                             }
-                         } else if (elementType === 'booking') {
-                             const bookingSnapshot = await get(child(bookingsRef, elementId));
-                             const bookingData = bookingSnapshot.val();
-                             if (bookingData) {
-                                 await push(archivedBookingsRef, bookingData);
-                                 await remove(child(bookingsRef, elementId));
-                                 showMessage("Buchung erfolgreich archiviert.");
-                             }
-                         }
-                     } catch (error) {
-                         console.error(`Fehler beim Archivieren des ${elementType}s:`, error);
-                         showMessage("Fehler beim Archivieren. Versuchen Sie es erneut.");
-                     }
-                 }
+            try {
+                await push(flightsRef, newFlight);
+                showMessage("Flug erfolgreich hinzugefügt!");
+                addFlightForm.reset();
+            } catch (error) {
+                console.error("Fehler beim Hinzufügen des Fluges:", error);
+                showMessage("Fehler beim Hinzufügen des Fluges.");
             }
         });
+        
+        document.addEventListener('click', async (e) => {
+            if (!authReady) return;
+            const target = e.target.closest('button');
+            if (!target) return;
+
+            const id = target.getAttribute('data-id');
+            const type = target.getAttribute('data-type');
+            
+            if (target.classList.contains('archive-btn')) {
+                let dataToArchive = null;
+                let originalRef = null;
+
+                if (type === 'flight') {
+                    dataToArchive = allFlights.find(f => f.id === id);
+                    originalRef = child(flightsRef, id);
+                } else if (type === 'booking') {
+                    dataToArchive = allBookings.find(b => b.id === id);
+                    originalRef = child(bookingsRef, id);
+                }
+                
+                if (dataToArchive) {
+                    try {
+                        const archivePath = `artifacts/${sanitizedAppId}/public/data/archive/${type}s`;
+                        await push(ref(db, archivePath), dataToArchive);
+                        await remove(originalRef);
+                        showMessage(`${type === 'flight' ? 'Flug' : 'Buchung'} erfolgreich archiviert.`);
+                    } catch (error) {
+                        console.error(`Fehler beim Archivieren der ${type}:`, error);
+                        showMessage(`Fehler beim Archivieren der ${type}.`);
+                    }
+                }
+            }
+            
+            if (target.classList.contains('delete-btn')) {
+                let originalRef = null;
+                if (type === 'flight') {
+                    originalRef = child(flightsRef, id);
+                } else if (type === 'booking') {
+                    originalRef = child(bookingsRef, id);
+                }
+
+                if (originalRef) {
+                    try {
+                        await remove(originalRef);
+                        showMessage(`${type === 'flight' ? 'Flug' : 'Buchung'} erfolgreich gelöscht.`);
+                    } catch (error) {
+                        console.error(`Fehler beim Löschen der ${type}:`, error);
+                        showMessage(`Fehler beim Löschen der ${type}.`);
+                    }
+                }
+            }
+        });
+
+        document.getElementById('archive-search-input').addEventListener('input', renderArchivedData);
+        document.getElementById('archive-filter-select').addEventListener('change', renderArchivedData);
     </script>
 </body>
 </html>
