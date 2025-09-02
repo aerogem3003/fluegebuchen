@@ -173,6 +173,7 @@
             'LHR': 'London', 'ZRH': 'Zürich', 'VIE': 'Wien', 'MAD': 'Madrid',
             'FCO': 'Rom', 'DXB': 'Dubai', 'SYD': 'Sydney', 'NRT': 'Tokio',
             'SFO': 'San Francisco', 'BCN': 'Barcelona', 'IST': 'Istanbul', 'BKK': 'Bangkok',
+            'ORD': 'Chicago', 'TXL': 'Berlin', 'CGN': 'Köln/Bonn'
         };
 
         let userId = null;
@@ -272,7 +273,7 @@
         
         // Find flights (direct and with layover)
         function findFlights(abflug, ankunft, monat) {
-            if (!abflug || !ankunft) return [];
+            if (!abflug || !ankunft) return { direct: [], layover: [] };
 
             const [year, month] = monat.split('-').map(Number);
             const flightsForMonth = allFlights.filter(f => {
@@ -286,12 +287,11 @@
             flightsForMonth.forEach(firstLeg => {
                 if (firstLeg.abflug.toUpperCase() === abflug) {
                     flightsForMonth.forEach(secondLeg => {
-                        // Check if the layover is a day later and a valid connection
-                        const firstLegDate = new Date(firstLeg.datum);
-                        const secondLegDate = new Date(secondLeg.datum);
-                        if (secondLeg.abflug === firstLeg.ankunft && secondLeg.ankunft.toUpperCase() === ankunft && secondLegDate > firstLegDate) {
-                            layoverFlights.push([firstLeg, secondLeg]);
-                        }
+                         const firstLegDate = new Date(firstLeg.datum);
+                         const secondLegDate = new Date(secondLeg.datum);
+                         if (secondLeg.abflug === firstLeg.ankunft && secondLeg.ankunft.toUpperCase() === ankunft && secondLegDate >= firstLegDate) {
+                             layoverFlights.push([firstLeg, secondLeg]);
+                         }
                     });
                 }
             });
