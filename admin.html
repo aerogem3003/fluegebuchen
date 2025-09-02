@@ -162,7 +162,7 @@
 
         let userId = null;
         let flightsRef = null;
-        let bookingsRef = null;
+        let allBookingsRef = null;
         let archivedRef = null;
         let authReady = false;
 
@@ -170,6 +170,15 @@
         let allBookings = [];
         let archivedFlights = [];
         let archivedBookings = [];
+        
+        const airportCodes = {
+            'DUS': 'Düsseldorf', 'FRA': 'Frankfurt', 'BER': 'Berlin', 'MUC': 'München',
+            'AMS': 'Amsterdam', 'LAX': 'Los Angeles', 'JFK': 'New York', 'CDG': 'Paris',
+            'LHR': 'London', 'ZRH': 'Zürich', 'VIE': 'Wien', 'MAD': 'Madrid',
+            'FCO': 'Rom', 'DXB': 'Dubai', 'SYD': 'Sydney', 'NRT': 'Tokio',
+            'SFO': 'San Francisco', 'BCN': 'Barcelona', 'IST': 'Istanbul', 'BKK': 'Bangkok',
+            'ORD': 'Chicago', 'TXL': 'Berlin', 'CGN': 'Köln/Bonn'
+        };
 
         // Message box functions
         const messageBox = document.getElementById('messageBox');
@@ -180,12 +189,26 @@
             setTimeout(() => messageBox.classList.add('hidden'), 5000);
         }
 
+        // Helper to convert full name or city name to code
+        function nameToCode(name) {
+             const cleanedName = name.toLowerCase().replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ä/g, 'a');
+             if (airportCodes[name.toUpperCase()]) {
+                 return name.toUpperCase();
+             }
+             for (const code in airportCodes) {
+                 if (airportCodes[code].toLowerCase() === cleanedName) {
+                     return code;
+                 }
+             }
+             return name.toUpperCase();
+        }
+
         // Authenticate user
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userId = user.uid;
                 flightsRef = ref(db, `artifacts/${sanitizedAppId}/public/data/flights`);
-                bookingsRef = ref(db, `artifacts/${sanitizedAppId}/public/data/bookings`);
+                allBookingsRef = ref(db, `artifacts/${sanitizedAppId}/users`);
                 archivedRef = ref(db, `artifacts/${sanitizedAppId}/public/data/archive`);
                 authReady = true;
                 
@@ -219,9 +242,20 @@
         }
         
         function listenForBookings() {
-            onValue(bookingsRef, (snapshot) => {
-                const bookingsData = snapshot.val();
-                allBookings = bookingsData ? Object.keys(bookingsData).map(key => ({ id: key, ...bookingsData[key] })) : [];
+            onValue(allBookingsRef, (snapshot) => {
+                const usersData = snapshot.val();
+                const bookings = [];
+                if (usersData) {
+                    for (const userKey in usersData) {
+                        if (usersData[userKey].bookings) {
+                            const userBookings = usersData[userKey].bookings;
+                            for (const bookingKey in userBookings) {
+                                bookings.push({ userId: userKey, id: bookingKey, ...userBookings[bookingKey] });
+                            }
+                        }
+                    }
+                }
+                allBookings = bookings;
                 renderBookings();
             });
         }
@@ -277,7 +311,7 @@
                 allBookings.forEach(booking => {
                     const bookingItem = document.createElement('div');
                     bookingItem.className = 'bg-white p-4 rounded-lg border border-gray-200 flex items-center justify-between shadow-sm';
-                    const itineraryHtml = booking.itinerary.map(leg => `${leg.abflug} &rarr; ${leg.ankunft}`).join(' | ');
+                    const itineraryHtml = booking.itinerary.map(leg => `${airportCodes[leg.abflug] || leg.abflug} &rarr; ${airportCodes[leg.ankunft] || leg.ankunft}`).join(' | ');
                     bookingItem.innerHTML = `
                         <div class="flex-grow">
                             <p class="font-bold text-lg">${booking.name}</p>
@@ -285,12 +319,12 @@
                             <p class="text-sm text-gray-600">Preis: ${booking.totalPrice} €</p>
                         </div>
                         <div class="flex space-x-2">
-                            <button data-id="${booking.id}" data-type="booking" class="archive-btn btn bg-gray-200 text-gray-800 hover:bg-gray-300">
+                            <button data-user-id="${booking.userId}" data-id="${booking.id}" data-type="booking" class="archive-btn btn bg-gray-200 text-gray-800 hover:bg-gray-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                   <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H4a1 1 0 01-1-1zm3 4a1 1 0 011-1h4a1 1 0 110 2H7a1 1 0 01-1-1zm3 4a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1zm3 4a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1z" clip-rule="evenodd" />
                                 </svg>
                             </button>
-                            <button data-id="${booking.id}" data-type="booking" class="delete-btn btn bg-red-500 text-white hover:bg-red-600">
+                            <button data-user-id="${booking.userId}" data-id="${booking.id}" data-type="booking" class="delete-btn btn bg-red-500 text-white hover:bg-red-600">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                   <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                                 </svg>
@@ -312,13 +346,15 @@
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'bg-white p-4 rounded-lg border border-gray-200 shadow-sm';
                 if (type === 'flight') {
+                    const abflugOrt = airportCodes[item.abflug] || item.abflug;
+                    const ankunftOrt = airportCodes[item.ankunft] || item.ankunft;
                     itemDiv.innerHTML = `
                         <p class="font-bold text-lg text-gray-700">Flug archiviert</p>
-                        <p class="text-sm text-gray-600">${item.abflug} &rarr; ${item.ankunft} (${item.flugnr})</p>
-                        <p class="text-xs text-gray-500">Datum: ${item.datum} | Preis: ${item.preis} €</p>
+                        <p class="text-sm text-gray-600">${abflugOrt} (${item.abflug}) &rarr; ${ankunftOrt} (${item.ankunft})</p>
+                        <p class="text-xs text-gray-500">Flugnr: ${item.flugnr} | Datum: ${item.datum} | Preis: ${item.preis} €</p>
                     `;
                 } else if (type === 'booking') {
-                    const itineraryHtml = item.itinerary.map(leg => `${leg.abflug} &rarr; ${leg.ankunft}`).join(' | ');
+                    const itineraryHtml = item.itinerary.map(leg => `${airportCodes[leg.abflug] || leg.abflug} &rarr; ${airportCodes[leg.ankunft] || leg.ankunft}`).join(' | ');
                      itemDiv.innerHTML = `
                         <p class="font-bold text-lg text-gray-700">Buchung archiviert</p>
                         <p class="text-sm text-gray-600">Kunde: ${item.name}</p>
@@ -329,6 +365,8 @@
             };
 
             const filteredFlights = archivedFlights.filter(f => 
+                (airportCodes[f.abflug] && airportCodes[f.abflug].toLowerCase().includes(searchTerm)) ||
+                (airportCodes[f.ankunft] && airportCodes[f.ankunft].toLowerCase().includes(searchTerm)) ||
                 f.abflug.toLowerCase().includes(searchTerm) || 
                 f.ankunft.toLowerCase().includes(searchTerm) ||
                 f.flugnr.toLowerCase().includes(searchTerm)
@@ -336,7 +374,11 @@
 
             const filteredBookings = archivedBookings.filter(b => 
                 b.name.toLowerCase().includes(searchTerm) ||
-                b.itinerary.some(leg => leg.abflug.toLowerCase().includes(searchTerm) || leg.ankunft.toLowerCase().includes(searchTerm))
+                b.itinerary.some(leg => {
+                    const abflugMatch = (airportCodes[leg.abflug] && airportCodes[leg.abflug].toLowerCase().includes(searchTerm)) || leg.abflug.toLowerCase().includes(searchTerm);
+                    const ankunftMatch = (airportCodes[leg.ankunft] && airportCodes[leg.ankunft].toLowerCase().includes(searchTerm)) || leg.ankunft.toLowerCase().includes(searchTerm);
+                    return abflugMatch || ankunftMatch;
+                })
             );
 
             if (filter === 'all' || filter === 'flights') {
@@ -392,8 +434,9 @@
                     dataToArchive = allFlights.find(f => f.id === id);
                     originalRef = child(flightsRef, id);
                 } else if (type === 'booking') {
+                    const userIdToArchive = target.getAttribute('data-user-id');
                     dataToArchive = allBookings.find(b => b.id === id);
-                    originalRef = child(bookingsRef, id);
+                    originalRef = child(allBookingsRef, `${userIdToArchive}/bookings/${id}`);
                 }
                 
                 if (dataToArchive) {
@@ -414,7 +457,8 @@
                 if (type === 'flight') {
                     originalRef = child(flightsRef, id);
                 } else if (type === 'booking') {
-                    originalRef = child(bookingsRef, id);
+                    const userIdToDelete = target.getAttribute('data-user-id');
+                    originalRef = child(allBookingsRef, `${userIdToDelete}/bookings/${id}`);
                 }
 
                 if (originalRef) {
