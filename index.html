@@ -3,34 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aerogem Flugbuchung</title>
+    <title>AeroGem - Reisen Sie mit uns</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            @apply bg-gray-100 text-gray-800 flex flex-col items-center p-4 min-h-screen;
+            @apply bg-gray-50 text-gray-800;
+        }
+        .hero {
+            background: linear-gradient(135deg, #0f172a, #1e3a8a);
+            color: white;
+            @apply text-white py-20 px-4 md:px-8 text-center rounded-b-[40px] shadow-2xl;
         }
         .container {
-            @apply bg-white p-8 rounded-2xl shadow-xl max-w-4xl w-full my-8;
+            @apply bg-white p-8 rounded-2xl shadow-xl max-w-4xl w-full mx-auto my-8;
         }
-        .btn {
+        .btn-primary {
             @apply px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition duration-300;
+        }
+        .btn-secondary {
+            @apply px-6 py-3 bg-gray-200 text-gray-800 font-medium rounded-xl hover:bg-gray-300 transition duration-300;
         }
     </style>
 </head>
 <body>
+    <div class="hero">
+        <p class="text-xs text-blue-300 mb-2">Demo-Website. Es werden keine echten Flüge verkauft.</p>
+        <h1 class="text-6xl font-extrabold mb-4">AeroGem</h1>
+        <p class="text-lg font-light mb-8">Ihre Reise beginnt hier.</p>
+        <div class="max-w-xl mx-auto space-y-2 text-center text-sm font-light">
+            <p>Breite Auswahl • Uns vertrauen 40 Millionen Passagiere jährlich</p>
+            <p>Mehr als 20 Jahre Erfahrung</p>
+        </div>
+    </div>
 
-    <p class="text-xs text-gray-500 mt-2">Demo-Website. Es werden keine echten Flüge verkauft.</p>
-    <h1 class="text-4xl font-extrabold text-blue-900 mt-4">AEROGEM</h1>
+    <div class="container -mt-16 relative z-10">
+        <h2 class="text-2xl font-semibold text-blue-800 mb-6">Flüge suchen</h2>
+        <form id="search-form" class="space-y-4">
+            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <div class="flex-grow">
+                    <label for="origin-search" class="block text-sm font-medium text-gray-700">Abflug (Stadt oder IATA)</label>
+                    <input type="text" id="origin-search" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+                </div>
+                <div class="flex-grow">
+                    <label for="destination-search" class="block text-sm font-medium text-gray-700">Ankunft (Stadt oder IATA)</label>
+                    <input type="text" id="destination-search" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+                </div>
+                <div class="flex-grow">
+                    <label for="departure-week" class="block text-sm font-medium text-gray-700">Woche der Abreise</label>
+                    <input type="week" id="departure-week" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm">
+                </div>
+            </div>
+            <button type="submit" class="btn-primary w-full">Flüge suchen</button>
+        </form>
+    </div>
 
-    <div class="container">
-        <h2 class="text-2xl font-semibold text-blue-800 mb-6">Verfügbare Flüge</h2>
-        
-        <div id="flights-list" class="space-y-4">
-            <!-- Flight items will be rendered here -->
+    <div class="container" id="results-container">
+        <h2 class="text-2xl font-semibold text-blue-800 mb-6">Suchergebnisse</h2>
+        <div id="results-list" class="space-y-6">
+            <p class="text-center text-gray-500" id="initial-message">Bitte geben Sie Ihre Reisedaten ein.</p>
+        </div>
+    </div>
+    
+    <div class="container" id="upcoming-flights-container">
+        <h2 class="text-2xl font-semibold text-blue-800 mb-6">Aktuelle Flüge</h2>
+        <div id="upcoming-flights-list" class="space-y-6">
+            <p class="text-center text-gray-500">Lade Flüge...</p>
         </div>
     </div>
 
@@ -57,11 +98,20 @@
                     <input type="date" id="dob" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <div class="flex justify-end space-x-4">
-                    <button type="button" id="close-modal" class="px-4 py-2 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-200">Abbrechen</button>
-                    <button type="submit" class="btn text-sm">Jetzt buchen</button>
+                    <button type="button" id="close-modal" class="btn-secondary">Abbrechen</button>
+                    <button type="submit" class="btn-primary">Jetzt buchen</button>
                 </div>
             </form>
         </div>
+    </div>
+    
+    <!-- Confirmation Message -->
+    <div id="confirmation-section" class="container hidden">
+        <h2 class="text-2xl font-bold text-green-600 mb-4">Buchungsbestätigung</h2>
+        <div id="confirmation-details" class="bg-green-50 p-6 rounded-xl border-l-4 border-green-400">
+            <!-- Details will be populated here -->
+        </div>
+        <p class="text-sm text-gray-500 mt-4">Wenn Sie Änderungen an Ihrer Buchung vornehmen möchten, kontaktieren Sie uns bitte per E-Mail.</p>
     </div>
 
     <!-- Message Box (for alerts) -->
@@ -87,16 +137,25 @@
         
         // IMPORTANT: Use the global variables provided by the Canvas environment for paths and auth
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        // Sanitize the appId to remove invalid characters for Realtime Database paths
         const sanitizedAppId = appId.replace(/\./g, '-');
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        const flightsRef = ref(db, `artifacts/${sanitizedAppId}/public/data/flights`);
         let bookingsRef = null;
         let authReady = false;
+        let allFlights = {}; // Store all flights for search
+        const airportMap = {
+            'DUS': 'Düsseldorf', 'Dusseldorf': 'DUS',
+            'AMS': 'Amsterdam', 'Amsterdam': 'AMS',
+            'FRA': 'Frankfurt', 'Frankfurt': 'FRA',
+            'MUC': 'Munich', 'Munich': 'MUC',
+            'LAX': 'Los Angeles', 'Los Angeles': 'LAX',
+            'JFK': 'New York', 'New York': 'JFK',
+            'CDG': 'Paris', 'Paris': 'CDG',
+            'LHR': 'London', 'London': 'LHR'
+        };
 
         // Message box function
         const messageBox = document.getElementById('messageBox');
@@ -123,62 +182,180 @@
                 }
             }
         });
+        
+        // Get week number function
+        const getWeekNumber = (d) => {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return `${d.getUTCFullYear()}-W${weekNo < 10 ? '0' : ''}${weekNo}`;
+        };
 
-        // Listen for flights and display them
+        // Listen for all flights and store them for search, then render upcoming
+        const flightsRef = ref(db, `artifacts/${sanitizedAppId}/public/data/flights`);
         onValue(flightsRef, (snapshot) => {
             const flightsData = snapshot.val();
-            const flightsList = document.getElementById('flights-list');
-            flightsList.innerHTML = '';
-            if (!flightsData) {
-                flightsList.innerHTML = '<p class="text-center text-gray-500">Keine Flüge verfügbar.</p>';
+            allFlights = flightsData || {};
+            renderUpcomingFlights();
+        });
+        
+        function renderUpcomingFlights() {
+            const upcomingFlightsList = document.getElementById('upcoming-flights-list');
+            const flightsArray = Object.keys(allFlights).map(key => ({ id: key, ...allFlights[key] }));
+            const currentWeek = getWeekNumber(new Date());
+            
+            const upcomingFlights = flightsArray.filter(flight => {
+                const flightDate = new Date(flight.datum);
+                return getWeekNumber(flightDate) === currentWeek;
+            });
+            
+            upcomingFlightsList.innerHTML = '';
+            if (upcomingFlights.length === 0) {
+                upcomingFlightsList.innerHTML = '<p class="text-center text-gray-500">In dieser Woche sind keine Flüge geplant.</p>';
+            } else {
+                upcomingFlights.forEach(flight => {
+                     const flightItem = document.createElement('div');
+                     flightItem.className = 'bg-white p-6 rounded-xl shadow-md border border-gray-200 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0';
+                     flightItem.innerHTML = `
+                        <div class="flex-grow">
+                            <p class="text-lg font-bold text-blue-900">Flugnr: ${flight.flugnr}</p>
+                            <p class="text-xl font-bold text-blue-800 my-1">${flight.abflug} &rarr; ${flight.ankunft}</p>
+                            <p class="text-sm text-gray-600">
+                                <span class="mx-1">•</span> ${flight.datum} um ${flight.zeit}
+                            </p>
+                        </div>
+                        <div class="flex-shrink-0 text-right">
+                            <p class="text-2xl font-bold text-green-600">${flight.preis.toFixed(2)} €</p>
+                            <button data-itinerary='${JSON.stringify([flight])}' data-price="${flight.preis}" class="btn-primary mt-2 book-btn">Buchen</button>
+                        </div>
+                    `;
+                    upcomingFlightsList.appendChild(flightItem);
+                });
+            }
+        }
+
+        // Search logic
+        const searchForm = document.getElementById('search-form');
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const originInput = document.getElementById('origin-search').value.toUpperCase();
+            const destinationInput = document.getElementById('destination-search').value.toUpperCase();
+            const weekInput = document.getElementById('departure-week').value;
+
+            const originCode = airportMap[originInput] || originInput;
+            const destinationCode = airportMap[destinationInput] || destinationInput;
+            
+            const resultsList = document.getElementById('results-list');
+            resultsList.innerHTML = '';
+            
+            if (!allFlights) {
+                resultsList.innerHTML = '<p class="text-center text-gray-500">Keine Flüge gefunden.</p>';
                 return;
             }
-            const flights = Object.keys(flightsData).map(key => ({ id: key, ...flightsData[key] }));
 
-            flights.forEach(flight => {
-                const flightItem = document.createElement('div');
-                flightItem.className = 'bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0';
-                flightItem.innerHTML = `
-                    <div class="flex-grow">
-                        <p class="text-lg font-bold text-blue-900">Flugnr: ${flight.flugnr}</p>
-                        <p class="text-sm text-gray-600">
-                            ${flight.abflug} &rarr; ${flight.ankunft}
-                            <span class="mx-2">•</span>
-                            Datum: ${flight.datum}
-                            <span class="mx-2">•</span>
-                            Zeit: ${flight.zeit}
-                        </p>
-                        <p class="text-sm font-medium text-gray-600">Klasse: ${flight.klasse}</p>
-                        <p class="text-sm text-gray-600">Dauer: ${flight.dauerMin} Min</p>
-                    </div>
-                    <div class="flex-shrink-0 text-right">
-                        <p class="text-xl font-bold text-green-600">${flight.preis} €</p>
-                        <button data-id="${flight.id}" class="btn mt-2 book-btn">Buchen</button>
-                    </div>
-                `;
-                flightsList.appendChild(flightItem);
+            const foundFlights = [];
+            const flightsArray = Object.keys(allFlights).map(key => ({ id: key, ...allFlights[key] }));
+
+            const isSameWeek = (dateStr, weekStr) => {
+                const date = new Date(dateStr);
+                const year = date.getFullYear();
+                const week = Math.ceil((date - new Date(year, 0, 1)) / (24 * 60 * 60 * 1000) / 7);
+                const weekNumber = week < 10 ? `0${week}` : `${week}`;
+                const weekYear = new Date(date.getFullYear(), 0, 1).getFullYear();
+                return `${weekYear}-W${weekNumber}` === weekStr;
+            };
+
+            // Search for direct flights
+            flightsArray.forEach(flight => {
+                const flightDate = new Date(flight.datum);
+                if (flight.abflug.toUpperCase() === originCode && flight.ankunft.toUpperCase() === destinationCode && isSameWeek(flightDate, weekInput)) {
+                    foundFlights.push({
+                        type: 'Direktflug',
+                        flightId: flight.id,
+                        itinerary: [flight],
+                        totalPrice: flight.preis
+                    });
+                }
             });
-        });
 
+            // Search for connecting flights
+            const connectingFlights = [];
+            flightsArray.forEach(flight1 => {
+                const flight1Date = new Date(flight1.datum);
+                if (flight1.abflug.toUpperCase() === originCode && isSameWeek(flight1Date, weekInput)) {
+                    flightsArray.forEach(flight2 => {
+                        const flight2Date = new Date(flight2.datum);
+                        // Check if the connecting flight is on the same or next day
+                        if (flight2.abflug.toUpperCase() === flight1.ankunft.toUpperCase() && flight2.ankunft.toUpperCase() === destinationCode && flight2Date >= flight1Date) {
+                            connectingFlights.push({
+                                type: 'Umsteigeflug',
+                                flightId: `${flight1.id}-${flight2.id}`,
+                                itinerary: [flight1, flight2],
+                                totalPrice: flight1.preis + flight2.preis
+                            });
+                        }
+                    });
+                }
+            });
+            foundFlights.push(...connectingFlights);
+
+            if (foundFlights.length === 0) {
+                resultsList.innerHTML = '<p class="text-center text-gray-500">Keine Flüge für die ausgewählten Kriterien gefunden. Versuchen Sie es mit anderen Flughäfen oder Daten.</p>';
+            } else {
+                foundFlights.forEach(result => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'bg-white p-6 rounded-xl shadow-md border border-gray-200 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0';
+                    let itineraryHTML = '';
+                    let fullRoute = [];
+                    result.itinerary.forEach((flight, index) => {
+                        fullRoute.push(flight.abflug);
+                        if (index === result.itinerary.length - 1) {
+                            fullRoute.push(flight.ankunft);
+                        }
+                        itineraryHTML += `
+                            <p class="text-sm text-gray-600">
+                                <strong>Flug ${index + 1}:</strong> ${flight.flugnr}
+                                <span class="mx-1">•</span> ${flight.abflug} &rarr; ${flight.ankunft}
+                                <span class="mx-1">•</span> ${flight.datum} um ${flight.zeit}
+                            </p>
+                        `;
+                    });
+
+                    resultItem.innerHTML = `
+                        <div class="flex-grow">
+                            <p class="text-base font-bold text-blue-900">${result.type}</p>
+                            <p class="text-xl font-bold text-blue-800 my-1">${fullRoute.join(' &rarr; ')}</p>
+                            ${itineraryHTML}
+                        </div>
+                        <div class="flex-shrink-0 text-right">
+                            <p class="text-2xl font-bold text-green-600">${result.totalPrice.toFixed(2)} €</p>
+                            <button data-itinerary='${JSON.stringify(result.itinerary)}' data-price="${result.totalPrice}" class="btn-primary mt-2 book-btn">Buchen</button>
+                        </div>
+                    `;
+                    resultsList.appendChild(resultItem);
+                });
+            }
+        });
+        
         // Booking logic
         const bookingModal = document.getElementById('booking-modal');
         const bookingForm = document.getElementById('booking-form');
         const bookingInfo = document.getElementById('booking-info');
-        let currentFlight = null;
+        const confirmationSection = document.getElementById('confirmation-section');
+        const confirmationDetails = document.getElementById('confirmation-details');
+        let currentItinerary = null;
+        let currentPrice = null;
 
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('book-btn')) {
-                const flightId = e.target.getAttribute('data-id');
-                // Find flight from the rendered list
-                const flightItem = document.querySelector(`[data-id="${flightId}"]`).closest('.bg-gray-50');
-                const flightData = {
-                    flugnr: flightItem.querySelector('p:nth-of-type(1)').textContent.split(':')[1].trim(),
-                    route: flightItem.querySelector('p:nth-of-type(2)').textContent,
-                    preis: parseInt(flightItem.querySelector('.text-green-600').textContent.split(' ')[0])
-                };
-                currentFlight = flightData;
-                bookingInfo.textContent = `Sie buchen Flug ${flightData.flugnr} von ${flightData.route.split('→')[0].trim()} nach ${flightData.route.split('→')[1].split('•')[0].trim()} für ${flightData.preis} €.`;
+                currentItinerary = JSON.parse(e.target.getAttribute('data-itinerary'));
+                currentPrice = parseFloat(e.target.getAttribute('data-price'));
+                
+                const routeInfo = currentItinerary.map(f => `${f.abflug} &rarr; ${f.ankunft}`).join(', ');
+                bookingInfo.innerHTML = `Sie buchen einen Flug für die Route: <strong>${routeInfo}</strong> zum Preis von <strong>${currentPrice.toFixed(2)} €</strong>.`;
                 bookingModal.classList.remove('hidden');
+                confirmationSection.classList.add('hidden');
             }
         });
 
@@ -194,8 +371,8 @@
             }
 
             const bookingData = {
-                flugnr: currentFlight.flugnr,
-                preis: currentFlight.preis,
+                itinerary: currentItinerary,
+                totalPrice: currentPrice,
                 name: document.getElementById('name').value,
                 phone: document.getElementById('phone').value,
                 email: document.getElementById('email').value,
@@ -205,14 +382,34 @@
 
             try {
                 await push(bookingsRef, bookingData);
-                showMessage("Buchung erfolgreich!");
+                showMessage("Buchung erfolgreich! Buchungsbestätigung wird angezeigt.");
                 bookingModal.classList.add('hidden');
                 bookingForm.reset();
+                showConfirmation(bookingData);
             } catch (error) {
                 console.error("Fehler beim Speichern der Buchung:", error);
                 showMessage("Fehler bei der Buchung. Versuchen Sie es erneut.");
             }
         });
+        
+        function showConfirmation(data) {
+            let flightDetails = data.itinerary.map(flight => `
+                <p><strong>Flugnr:</strong> ${flight.flugnr}</p>
+                <p><strong>Route:</strong> ${flight.abflug} &rarr; ${flight.ankunft}</p>
+                <p><strong>Datum & Zeit:</strong> ${flight.datum} um ${flight.zeit}</p>
+                <p><strong>Klasse:</strong> ${flight.klasse}</p>
+                <p class="mb-2"><strong>Preis:</strong> ${flight.preis.toFixed(2)} €</p>
+            `).join('<hr class="my-2" />');
+
+            confirmationDetails.innerHTML = `
+                <p class="text-lg font-semibold mb-2">Vielen Dank für Ihre Buchung, ${data.name.split(' ')[0]}!</p>
+                <p class="text-sm mb-4">Ihre Buchungsdetails:</p>
+                ${flightDetails}
+                <p class="text-lg font-bold mt-4">Gesamtpreis: ${data.totalPrice.toFixed(2)} €</p>
+            `;
+            confirmationSection.classList.remove('hidden');
+            window.scrollTo({ top: confirmationSection.offsetTop, behavior: 'smooth' });
+        }
     </script>
 </body>
 </html>
